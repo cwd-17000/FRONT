@@ -23,7 +23,8 @@ export default function LoginPage() {
     if (res.ok) {
       router.push("/dashboard");
     } else {
-      alert("Login failed");
+      const errorText = await res.text();
+      alert(`Login failed (${res.status}): ${errorText || "Unknown error"}`);
     }
   }
 
