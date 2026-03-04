@@ -11,7 +11,7 @@ export default async function DashboardPage() {
 
   return (
     <div style={{ padding: 40 }}>
-      <h1>Dashboard</h1>
+      <h1>dashboard</h1>
       <p>You are authenticated.</p>
     </div>
   );
