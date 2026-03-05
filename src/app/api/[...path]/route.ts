@@ -1,63 +1,49 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.API_BASE_URL;
+const API_BASE_URL = process.env.API_BASE_URL;
 
-async function handler(
-  req: NextRequest,
-  context: { params: Promise<{ path: string[] }> }
-) {
-  if (!API_URL) {
-    return Response.json(
-      { error: "Missing API_BASE_URL environment variable" },
-      { status: 500 }
-    );
+async function proxy(req: NextRequest): Promise<NextResponse> {
+  // Strip the leading /api from the path and forward to NestJS
+  const pathname = req.nextUrl.pathname.replace(/^\/api/, "");
+  const search = req.nextUrl.search ?? "";
+  const url = `${API_BASE_URL}${pathname}${search}`;
+
+  const headers = new Headers(req.headers);
+  headers.delete("host");
+
+  // Forward the incoming cookie to NestJS on server-to-server calls
+  const cookie = req.headers.get("cookie");
+  if (cookie) headers.set("cookie", cookie);
+
+  let body: BodyInit | null = null;
+  if (!["GET", "HEAD"].includes(req.method)) {
+    body = await req.text();
   }
 
-  if (API_URL === req.nextUrl.origin) {
-    return Response.json(
-      {
-        error:
-          "API_BASE_URL points to this frontend host. Set it to your backend API host.",
-      },
-      { status: 500 }
-    );
-  }
-
-  const { path } = await context.params;
-  const normalizedApiUrl = API_URL.replace(/\/$/, "");
-  const pathSuffix = path.join("/");
-  const directUrl = `${normalizedApiUrl}/${pathSuffix}`;
-  const prefixedUrl = `${normalizedApiUrl}/api/${pathSuffix}`;
-
-  const requestInit: RequestInit = {
+  const nestRes = await fetch(url, {
     method: req.method,
-    headers: {
-      "Content-Type": "application/json",
-      cookie: req.headers.get("cookie") || "",
-    },
-    body: req.method !== "GET" ? await req.text() : undefined,
-    credentials: "include",
-  };
+    headers,
+    body,
+  });
 
-  let res = await fetch(directUrl, requestInit);
-  if (res.status === 404) {
-    res = await fetch(prefixedUrl, requestInit);
+  const resBody = await nestRes.text();
+
+  const response = new NextResponse(resBody, {
+    status: nestRes.status,
+    headers: { "Content-Type": nestRes.headers.get("content-type") ?? "application/json" },
+  });
+
+  // ✅ Forward Set-Cookie from NestJS so the httpOnly cookie lands in the browser
+  const setCookie = nestRes.headers.get("set-cookie");
+  if (setCookie) {
+    response.headers.set("set-cookie", setCookie);
   }
 
-  const body = await res.text();
-
-  return new Response(body, {
-    status: res.status,
-    headers: {
-      "content-type": res.headers.get("content-type") ?? "application/json",
-      "set-cookie": res.headers.get("set-cookie") ?? "",
-    },
-  });
+  return response;
 }
 
-export {
-  handler as GET,
-  handler as POST,
-  handler as PATCH,
-  handler as DELETE,
-};
+export const GET = proxy;
+export const POST = proxy;
+export const PUT = proxy;
+export const PATCH = proxy;
+export const DELETE = proxy;
