@@ -25,7 +25,6 @@ export default function CreateOrgPage() {
 
       if (res.ok) {
         const data = await res.json();
-        // Show the join code before going to dashboard
         setJoinCode(data.joinCode);
         return;
       }
@@ -39,22 +38,23 @@ export default function CreateOrgPage() {
     }
   }
 
-  // Show join code confirmation screen before proceeding
   if (joinCode) {
     return (
       <div style={{ padding: 40, maxWidth: 480 }}>
         <h1>Organization Created!</h1>
         <p>Share this join code with your team members:</p>
-        <div style={{
-          fontSize: 28,
-          fontWeight: "bold",
-          letterSpacing: 4,
-          padding: "16px 24px",
-          background: "#f4f4f4",
-          borderRadius: 8,
-          marginBottom: 24,
-          textAlign: "center",
-        }}>
+        <div
+          style={{
+            fontSize: 28,
+            fontWeight: "bold",
+            letterSpacing: 4,
+            padding: "16px 24px",
+            background: "#f4f4f4",
+            borderRadius: 8,
+            marginBottom: 24,
+            textAlign: "center",
+          }}
+        >
           {joinCode}
         </div>
         <p style={{ color: "#666", fontSize: 14, marginBottom: 24 }}>
