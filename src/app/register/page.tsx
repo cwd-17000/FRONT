@@ -32,7 +32,7 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        router.push("/dashboard");
+        router.push("/login");
         return;
       }
 

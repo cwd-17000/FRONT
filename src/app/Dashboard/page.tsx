@@ -29,9 +29,6 @@ export default async function DashboardPage() {
       <p>Welcome, {user.email}</p>
       <p>Role: {user.role ?? "N/A"}</p>
       <LogoutButton />
-      <p style={{ marginTop: 16 }}>
-        Don't have an account? <a href="/register">Sign up</a>
-      </p>
     </div>
   );
 }
