@@ -18,15 +18,15 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         credentials: "include",
       });
 
       if (res.ok) {
-        router.push("/dashboard");
+        const data = await res.json();
+        // ← redirect based on whether user has an org
+        router.push(data.requiresOnboarding ? "/onboarding" : "/dashboard");
         return;
       }
 
@@ -50,8 +50,7 @@ export default function LoginPage() {
           autoComplete="email"
           onChange={(e) => setEmail(e.target.value)}
         />
-        <br />
-        <br />
+        <br /><br />
         <input
           type="password"
           placeholder="Password"
@@ -59,14 +58,11 @@ export default function LoginPage() {
           autoComplete="current-password"
           onChange={(e) => setPassword(e.target.value)}
         />
-        <br />
-        <br />
+        <br /><br />
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
-        {error ? (
-          <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>
-        ) : null}
+        {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}
       </form>
       <p style={{ marginTop: 16 }}>
         Don't have an account? <a href="/register">Sign up</a>

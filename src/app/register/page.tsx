@@ -1,4 +1,3 @@
-// app/register/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,7 +31,8 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        router.push("/login");
+        // ← new users always go to onboarding
+        router.push("/onboarding");
         return;
       }
 
