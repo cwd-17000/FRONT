@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.API_BASE_URL;
+const API_BASE_URL = process.env.API_BASE_URL?.trim();
 
 async function proxy(req: NextRequest): Promise<NextResponse> {
+  if (!API_BASE_URL) {
+    return NextResponse.json(
+      { message: "API_BASE_URL is not configured" },
+      { status: 500 },
+    );
+  }
+
   // Strip the leading /api from the path and forward to NestJS
   const pathname = req.nextUrl.pathname.replace(/^\/api/, "");
   const search = req.nextUrl.search ?? "";
@@ -10,6 +17,9 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
 
   const headers = new Headers(req.headers);
   headers.delete("host");
+  headers.delete("expect");
+  headers.delete("connection");
+  headers.delete("content-length");
 
   // Forward the incoming cookie to NestJS on server-to-server calls
   const cookie = req.headers.get("cookie");
@@ -20,11 +30,19 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
     body = await req.text();
   }
 
-  const nestRes = await fetch(url, {
-    method: req.method,
-    headers,
-    body,
-  });
+  let nestRes: Response;
+  try {
+    nestRes = await fetch(url, {
+      method: req.method,
+      headers,
+      body,
+    });
+  } catch {
+    return NextResponse.json(
+      { message: "Unable to reach upstream API" },
+      { status: 502 },
+    );
+  }
 
   const resBody = await nestRes.text();
 
