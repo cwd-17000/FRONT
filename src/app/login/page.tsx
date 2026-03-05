@@ -24,9 +24,42 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        // ← redirect based on whether user has an org
-        router.push(data.requiresOnboarding ? "/onboarding" : "/dashboard");
+        const data = await res.json().catch(() => ({} as Record<string, unknown>));
+
+        const hasOrganization =
+          data &&
+          typeof data === "object" &&
+          (
+            ("hasOrganization" in data && Boolean(data.hasOrganization)) ||
+            ("organizationId" in data && Boolean(data.organizationId)) ||
+            ("orgId" in data && Boolean(data.orgId)) ||
+            ("organization" in data && Boolean(data.organization)) ||
+            ("org" in data && Boolean(data.org))
+          );
+
+        const hasOrganizationSignal =
+          data &&
+          typeof data === "object" &&
+          (
+            "hasOrganization" in data ||
+            "organizationId" in data ||
+            "orgId" in data ||
+            "organization" in data ||
+            "org" in data
+          );
+
+        const requiresOnboarding =
+          data &&
+          typeof data === "object" &&
+          (
+            ("requiresOnboarding" in data && Boolean(data.requiresOnboarding)) ||
+            ("needsOnboarding" in data && Boolean(data.needsOnboarding)) ||
+            ("isFirstLogin" in data && Boolean(data.isFirstLogin)) ||
+            ("hasOrganization" in data && data.hasOrganization === false) ||
+            (hasOrganizationSignal && !hasOrganization)
+          );
+
+        router.push(requiresOnboarding ? "/onboarding" : "/dashboard");
         return;
       }
 
