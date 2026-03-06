@@ -32,7 +32,7 @@ export default function RegisterPage() {
 
       if (res.ok) {
         // ← new users always go to onboarding
-        router.push("/onboarding");
+        router.push("/dashboard");
         return;
       }
 
