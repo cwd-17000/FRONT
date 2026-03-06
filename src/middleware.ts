@@ -23,6 +23,7 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
+// src/middleware.ts
 export const config = {
   matcher: [
     "/dashboard/:path*",
@@ -31,3 +32,4 @@ export const config = {
     "/register",
   ],
 };
+

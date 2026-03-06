@@ -59,10 +59,20 @@ export default async function DashboardPage() {
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Quick Actions</h2>
-      <div style={{ display: "flex", gap: 12 }}>
-        <a href="/dashboard/members"><button>Manage Members</button></a>
-        <a href="/dashboard/projects"><button>Projects</button></a>
-      </div>
+<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+  <a href="/dashboard/goals">
+    <button>Goals</button>
+  </a>
+  <a href="/dashboard/initiatives">
+    <button>Initiatives</button>
+  </a>
+  <a href="/dashboard/campaigns">
+    <button>Campaigns</button>
+  </a>
+  <a href="/dashboard/members">
+    <button>Manage Members</button>
+  </a>
+</div>
     </div>
   );
 }
