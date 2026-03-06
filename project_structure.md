@@ -1,13 +1,13 @@
 # 📁 marketing-platform-web - Project Structure
 
-*Generated on: 3/4/2026, 6:01:00 PM*
+*Generated on: 3/6/2026, 1:03:40 PM*
 
 ## 📋 Quick Overview
 
 | Metric | Value |
 |--------|-------|
-| 📄 Total Files | 24 |
-| 📁 Total Folders | 9 |
+| 📄 Total Files | 30 |
+| 📁 Total Folders | 11 |
 | 🌳 Max Depth | 4 levels |
 | 🛠️ Tech Stack | React, Next.js, TypeScript, CSS, Node.js |
 
@@ -25,35 +25,35 @@
 
 ### By File Type
 
-- 🎨 **.svg** (SVG images): 5 files (20.8%)
-- ⚛️ **.tsx** (React TypeScript files): 5 files (20.8%)
-- 🔷 **.ts** (TypeScript files): 3 files (12.5%)
-- ⚙️ **.json** (JSON files): 3 files (12.5%)
-- 📄 **.mjs** (Other files): 2 files (8.3%)
-- 📖 **.md** (Markdown files): 2 files (8.3%)
-- 📄 **.example** (Other files): 1 files (4.2%)
-- 🚫 **.gitignore** (Git ignore): 1 files (4.2%)
-- 🖼️ **.ico** (Icon files): 1 files (4.2%)
-- 🎨 **.css** (Stylesheets): 1 files (4.2%)
+- ⚛️ **.tsx** (React TypeScript files): 10 files (33.3%)
+- 🎨 **.svg** (SVG images): 5 files (16.7%)
+- 🔷 **.ts** (TypeScript files): 4 files (13.3%)
+- ⚙️ **.json** (JSON files): 3 files (10.0%)
+- 📄 **.mjs** (Other files): 2 files (6.7%)
+- 📖 **.md** (Markdown files): 2 files (6.7%)
+- 📄 **.example** (Other files): 1 files (3.3%)
+- 🚫 **.gitignore** (Git ignore): 1 files (3.3%)
+- 🖼️ **.ico** (Icon files): 1 files (3.3%)
+- 🎨 **.css** (Stylesheets): 1 files (3.3%)
 
 ### By Category
 
-- **Assets**: 6 files (25.0%)
-- **React**: 5 files (20.8%)
-- **Other**: 3 files (12.5%)
-- **TypeScript**: 3 files (12.5%)
-- **Config**: 3 files (12.5%)
-- **Docs**: 2 files (8.3%)
-- **DevOps**: 1 files (4.2%)
-- **Styles**: 1 files (4.2%)
+- **React**: 10 files (33.3%)
+- **Assets**: 6 files (20.0%)
+- **TypeScript**: 4 files (13.3%)
+- **Other**: 3 files (10.0%)
+- **Config**: 3 files (10.0%)
+- **Docs**: 2 files (6.7%)
+- **DevOps**: 1 files (3.3%)
+- **Styles**: 1 files (3.3%)
 
 ### 📁 Largest Directories
 
-- **root**: 24 files
-- **src\app**: 8 files
-- **src**: 8 files
+- **root**: 30 files
+- **src**: 14 files
+- **src\app**: 13 files
 - **public**: 5 files
-- **src\app\api\[...path]**: 1 files
+- **src\app\dashboard**: 3 files
 
 ## 🌳 Directory Structure
 
@@ -81,16 +81,24 @@ marketing-platform-web/
 │   │   │   └── 📂 [...path]/
 │   │   │   │   └── 🔷 route.ts
 │   │   ├── 📂 dashboard/
+│   │   │   ├── ⚛️ LogoutButton.tsx
+│   │   │   ├── ⚛️ OrgSwitcher.tsx
 │   │   │   └── ⚛️ page.tsx
 │   │   ├── 🖼️ favicon.ico
 │   │   ├── 🎨 globals.css
 │   │   ├── ⚛️ layout.tsx
 │   │   ├── 📂 login/
 │   │   │   └── ⚛️ page.tsx
+│   │   ├── 📂 onboarding/
+│   │   │   ├── 📂 create/
+│   │   │   │   └── ⚛️ page.tsx
+│   │   │   ├── 📂 join/
+│   │   │   │   └── ⚛️ page.tsx
+│   │   │   └── ⚛️ page.tsx
 │   │   ├── ⚛️ page.tsx
 │   │   └── 📂 register/
 │   │   │   └── ⚛️ page.tsx
-│   └── 📚 lib/
+│   └── 🔷 middleware.ts
 └── 🟡 🔷 **tsconfig.json**
 ```
 

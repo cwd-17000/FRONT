@@ -4,13 +4,19 @@ import { redirect } from "next/navigation";
 import LogoutButton from "./LogoutButton";
 import OrgSwitcher from "./OrgSwitcher";
 
-async function getMe(token: string) {
-  const res = await fetch(`${process.env.API_BASE_URL}/auth/me`, {
-    headers: { cookie: `access_token=${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return res.json();
+function decodeJwtPayload(token: string) {
+  try {
+    const base64 = token.split(".")[1];
+    const decoded = Buffer.from(base64, "base64url").toString("utf-8");
+    return JSON.parse(decoded) as {
+      sub: string;
+      email: string;
+      activeOrgId: string | null;
+      activeOrgRole: string | null;
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function getMyOrgs(token: string) {
@@ -24,19 +30,16 @@ async function getMyOrgs(token: string) {
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token");
+  const tokenCookie = cookieStore.get("access_token");
 
-  if (!token) redirect("/login");
+  if (!tokenCookie) redirect("/login");
 
-  const [user, orgs] = await Promise.all([
-    getMe(token.value),
-    getMyOrgs(token.value),
-  ]);
+  const user = decodeJwtPayload(tokenCookie.value);
 
   if (!user) redirect("/login");
-
-  // If JWT has no activeOrgId, user skipped onboarding somehow
   if (!user.activeOrgId) redirect("/onboarding");
+
+  const orgs = await getMyOrgs(tokenCookie.value);
 
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
@@ -51,19 +54,14 @@ export default async function DashboardPage() {
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Your Organization</h2>
-      {/* OrgSwitcher shows active org and lets user switch if they belong to multiple */}
       <OrgSwitcher orgs={orgs} activeOrgId={user.activeOrgId} />
 
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Quick Actions</h2>
       <div style={{ display: "flex", gap: 12 }}>
-        <a href="/dashboard/members">
-          <button>Manage Members</button>
-        </a>
-        <a href="/dashboard/projects">
-          <button>Projects</button>
-        </a>
+        <a href="/dashboard/members"><button>Manage Members</button></a>
+        <a href="/dashboard/projects"><button>Projects</button></a>
       </div>
     </div>
   );

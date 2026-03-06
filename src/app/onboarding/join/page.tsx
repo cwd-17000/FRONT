@@ -33,78 +33,32 @@ export default function JoinOrgPage() {
   }
 
   async function handleJoin(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  e.preventDefault();
+  setError(null);
+  setIsSubmitting(true);
 
-    try {
-      const res = await fetch("/api/organizations/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ joinCode: joinCode.trim().toUpperCase() }),
-        credentials: "include",
-      });
+  try {
+    const res = await fetch("/api/organizations/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ joinCode: joinCode.trim().toUpperCase() }),
+      credentials: "include",
+    });
 
-      if (res.ok) {
-        const joinData = await res.json().catch(() => null);
-
-        const meRes = await fetch("/api/auth/me", {
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        const meData = meRes.ok ? await meRes.json().catch(() => null) : null;
-        const hasActiveOrg =
-          meData &&
-          typeof meData === "object" &&
-          "activeOrgId" in meData &&
-          Boolean((meData as { activeOrgId?: unknown }).activeOrgId);
-
-        if (!hasActiveOrg) {
-          let orgIdToActivate = extractOrgId(joinData);
-
-          if (!orgIdToActivate) {
-            const orgsRes = await fetch("/api/organizations", {
-              credentials: "include",
-              cache: "no-store",
-            });
-
-            if (orgsRes.ok) {
-              const orgsData = await orgsRes.json().catch(() => null);
-              if (Array.isArray(orgsData) && orgsData.length > 0) {
-                const firstOrg = orgsData[0];
-                if (firstOrg && typeof firstOrg === "object") {
-                  const firstOrgRecord = firstOrg as Record<string, unknown>;
-                  if (typeof firstOrgRecord.id === "string" && firstOrgRecord.id) {
-                    orgIdToActivate = firstOrgRecord.id;
-                  }
-                }
-              }
-            }
-          }
-
-          if (orgIdToActivate) {
-            await fetch("/api/organizations/switch", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orgId: orgIdToActivate }),
-              credentials: "include",
-            });
-          }
-        }
-
-        window.location.assign("/dashboard");
-        return;
-      }
-
-      const errorText = await res.text();
-      setError(errorText || `Failed to join organization (${res.status})`);
-    } catch {
-      setError("Unable to reach the server. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    if (res.ok) {
+      window.location.assign("/dashboard"); // new cookie is already set
+      return;
     }
+
+    const errorText = await res.text();
+    setError(errorText || `Failed to join organization (${res.status})`);
+  } catch {
+    setError("Unable to reach the server. Please try again.");
+  } finally {
+    setIsSubmitting(false);
   }
+}
+
 
   return (
     <div style={{ padding: 40, maxWidth: 480 }}>

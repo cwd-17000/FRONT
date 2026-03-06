@@ -35,97 +35,36 @@ export default function CreateOrgPage() {
     return null;
   }
 
-  async function handleGoToDashboard() {
-    let shouldSetSubmitting = false;
-
-    try {
-      setError(null);
-      setIsSubmitting(true);
-      shouldSetSubmitting = true;
-
-      const meRes = await fetch("/api/auth/me", {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      const meData = meRes.ok ? await meRes.json().catch(() => null) : null;
-      const hasActiveOrg =
-        meData &&
-        typeof meData === "object" &&
-        "activeOrgId" in meData &&
-        Boolean((meData as { activeOrgId?: unknown }).activeOrgId);
-
-      if (!hasActiveOrg) {
-        let orgIdToActivate = createdOrgId;
-
-        if (!orgIdToActivate) {
-          const orgsRes = await fetch("/api/organizations", {
-            credentials: "include",
-            cache: "no-store",
-          });
-
-          if (orgsRes.ok) {
-            const orgsData = await orgsRes.json().catch(() => null);
-            if (Array.isArray(orgsData) && orgsData.length > 0) {
-              const firstOrg = orgsData[0];
-              if (firstOrg && typeof firstOrg === "object") {
-                const firstOrgRecord = firstOrg as Record<string, unknown>;
-                if (typeof firstOrgRecord.id === "string" && firstOrgRecord.id) {
-                  orgIdToActivate = firstOrgRecord.id;
-                }
-              }
-            }
-          }
-        }
-
-        if (orgIdToActivate) {
-          await fetch("/api/organizations/switch", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orgId: orgIdToActivate }),
-            credentials: "include",
-          });
-        }
-      }
-
-      window.location.assign("/dashboard");
-    } catch {
-      setError("Unable to continue to dashboard. Please try again.");
-    } finally {
-      if (shouldSetSubmitting) {
-        setIsSubmitting(false);
-      }
-    }
-  }
+  
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  e.preventDefault();
+  setError(null);
+  setIsSubmitting(true);
 
-    try {
-      const res = await fetch("/api/organizations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
-        credentials: "include",
-      });
+  try {
+    const res = await fetch("/api/organizations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() }),
+      credentials: "include",
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        setJoinCode(data.joinCode);
-        setCreatedOrgId(extractOrgId(data));
-        return;
-      }
-
-      const errorText = await res.text();
-      setError(errorText || `Failed to create organization (${res.status})`);
-    } catch {
-      setError("Unable to reach the server. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    if (res.ok) {
+      const data = await res.json();
+      setJoinCode(data.joinCode); // show join code screen
+      return;
     }
+
+    const errorText = await res.text();
+    setError(errorText || `Failed to create organization (${res.status})`);
+  } catch {
+    setError("Unable to reach the server. Please try again.");
+  } finally {
+    setIsSubmitting(false);
   }
+}
+
 
   if (joinCode) {
     return (
@@ -150,12 +89,12 @@ export default function CreateOrgPage() {
           Save this code — team members will need it to join your organization.
         </p>
         <button
-          onClick={handleGoToDashboard}
-          disabled={isSubmitting}
-          style={{ padding: "12px 24px", fontSize: 16 }}
-        >
-          {isSubmitting ? "Opening..." : "Go to Dashboard"}
-        </button>
+  onClick={() => window.location.assign("/dashboard")}
+  style={{ padding: "12px 24px", fontSize: 16 }}
+>
+  Go to Dashboard
+</button>
+
         {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}
       </div>
     );
