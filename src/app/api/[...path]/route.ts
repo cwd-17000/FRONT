@@ -25,6 +25,12 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
   const cookie = req.headers.get("cookie");
   if (cookie) headers.set("cookie", cookie);
 
+  const cookieHeader = req.headers.get("cookie") ?? "";
+  const tokenMatch = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
+  if (tokenMatch) {
+    headers.set("Authorization", `Bearer ${tokenMatch[1]}`);
+  }
+
   let body: BodyInit | null = null;
   if (!["GET", "HEAD"].includes(req.method)) {
     body = await req.text();
