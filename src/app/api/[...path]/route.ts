@@ -48,13 +48,31 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
 
   const response = new NextResponse(resBody, {
     status: nestRes.status,
-    headers: { "Content-Type": nestRes.headers.get("content-type") ?? "application/json" },
   });
 
-  // ✅ Forward Set-Cookie from NestJS so the httpOnly cookie lands in the browser
-  const setCookie = nestRes.headers.get("set-cookie");
-  if (setCookie) {
-    response.headers.set("set-cookie", setCookie);
+  const contentType = nestRes.headers.get("content-type");
+  if (contentType) {
+    response.headers.set("content-type", contentType);
+  }
+
+  // Forward all Set-Cookie headers exactly as received from upstream.
+  const maybeHeaders = nestRes.headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const setCookies =
+    typeof maybeHeaders.getSetCookie === "function"
+      ? maybeHeaders.getSetCookie()
+      : [];
+
+  if (setCookies.length > 0) {
+    for (const cookieValue of setCookies) {
+      response.headers.append("set-cookie", cookieValue);
+    }
+  } else {
+    const setCookie = nestRes.headers.get("set-cookie");
+    if (setCookie) {
+      response.headers.append("set-cookie", setCookie);
+    }
   }
 
   return response;
