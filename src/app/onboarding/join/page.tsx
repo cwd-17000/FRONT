@@ -9,6 +9,29 @@ export default function JoinOrgPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function extractOrgId(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") return null;
+
+    const data = payload as Record<string, unknown>;
+
+    if (typeof data.orgId === "string" && data.orgId) return data.orgId;
+    if (typeof data.organizationId === "string" && data.organizationId) return data.organizationId;
+
+    const org = data.org;
+    if (org && typeof org === "object") {
+      const orgRecord = org as Record<string, unknown>;
+      if (typeof orgRecord.id === "string" && orgRecord.id) return orgRecord.id;
+    }
+
+    const organization = data.organization;
+    if (organization && typeof organization === "object") {
+      const orgRecord = organization as Record<string, unknown>;
+      if (typeof orgRecord.id === "string" && orgRecord.id) return orgRecord.id;
+    }
+
+    return null;
+  }
+
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -23,7 +46,54 @@ export default function JoinOrgPage() {
       });
 
       if (res.ok) {
-        router.push("/dashboard");
+        const joinData = await res.json().catch(() => null);
+
+        const meRes = await fetch("/api/auth/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        const meData = meRes.ok ? await meRes.json().catch(() => null) : null;
+        const hasActiveOrg =
+          meData &&
+          typeof meData === "object" &&
+          "activeOrgId" in meData &&
+          Boolean((meData as { activeOrgId?: unknown }).activeOrgId);
+
+        if (!hasActiveOrg) {
+          let orgIdToActivate = extractOrgId(joinData);
+
+          if (!orgIdToActivate) {
+            const orgsRes = await fetch("/api/organizations", {
+              credentials: "include",
+              cache: "no-store",
+            });
+
+            if (orgsRes.ok) {
+              const orgsData = await orgsRes.json().catch(() => null);
+              if (Array.isArray(orgsData) && orgsData.length > 0) {
+                const firstOrg = orgsData[0];
+                if (firstOrg && typeof firstOrg === "object") {
+                  const firstOrgRecord = firstOrg as Record<string, unknown>;
+                  if (typeof firstOrgRecord.id === "string" && firstOrgRecord.id) {
+                    orgIdToActivate = firstOrgRecord.id;
+                  }
+                }
+              }
+            }
+          }
+
+          if (orgIdToActivate) {
+            await fetch("/api/organizations/switch", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orgId: orgIdToActivate }),
+              credentials: "include",
+            });
+          }
+        }
+
+        window.location.assign("/dashboard");
         return;
       }
 

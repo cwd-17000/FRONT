@@ -9,6 +9,94 @@ export default function CreateOrgPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState<string | null>(null);
+  const [createdOrgId, setCreatedOrgId] = useState<string | null>(null);
+
+  function extractOrgId(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") return null;
+
+    const data = payload as Record<string, unknown>;
+
+    if (typeof data.orgId === "string" && data.orgId) return data.orgId;
+    if (typeof data.organizationId === "string" && data.organizationId) return data.organizationId;
+    if (typeof data.id === "string" && data.id) return data.id;
+
+    const org = data.org;
+    if (org && typeof org === "object") {
+      const orgRecord = org as Record<string, unknown>;
+      if (typeof orgRecord.id === "string" && orgRecord.id) return orgRecord.id;
+    }
+
+    const organization = data.organization;
+    if (organization && typeof organization === "object") {
+      const orgRecord = organization as Record<string, unknown>;
+      if (typeof orgRecord.id === "string" && orgRecord.id) return orgRecord.id;
+    }
+
+    return null;
+  }
+
+  async function handleGoToDashboard() {
+    let shouldSetSubmitting = false;
+
+    try {
+      setError(null);
+      setIsSubmitting(true);
+      shouldSetSubmitting = true;
+
+      const meRes = await fetch("/api/auth/me", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const meData = meRes.ok ? await meRes.json().catch(() => null) : null;
+      const hasActiveOrg =
+        meData &&
+        typeof meData === "object" &&
+        "activeOrgId" in meData &&
+        Boolean((meData as { activeOrgId?: unknown }).activeOrgId);
+
+      if (!hasActiveOrg) {
+        let orgIdToActivate = createdOrgId;
+
+        if (!orgIdToActivate) {
+          const orgsRes = await fetch("/api/organizations", {
+            credentials: "include",
+            cache: "no-store",
+          });
+
+          if (orgsRes.ok) {
+            const orgsData = await orgsRes.json().catch(() => null);
+            if (Array.isArray(orgsData) && orgsData.length > 0) {
+              const firstOrg = orgsData[0];
+              if (firstOrg && typeof firstOrg === "object") {
+                const firstOrgRecord = firstOrg as Record<string, unknown>;
+                if (typeof firstOrgRecord.id === "string" && firstOrgRecord.id) {
+                  orgIdToActivate = firstOrgRecord.id;
+                }
+              }
+            }
+          }
+        }
+
+        if (orgIdToActivate) {
+          await fetch("/api/organizations/switch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orgId: orgIdToActivate }),
+            credentials: "include",
+          });
+        }
+      }
+
+      window.location.assign("/dashboard");
+    } catch {
+      setError("Unable to continue to dashboard. Please try again.");
+    } finally {
+      if (shouldSetSubmitting) {
+        setIsSubmitting(false);
+      }
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +114,7 @@ export default function CreateOrgPage() {
       if (res.ok) {
         const data = await res.json();
         setJoinCode(data.joinCode);
+        setCreatedOrgId(extractOrgId(data));
         return;
       }
 
@@ -61,11 +150,13 @@ export default function CreateOrgPage() {
           Save this code — team members will need it to join your organization.
         </p>
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={handleGoToDashboard}
+          disabled={isSubmitting}
           style={{ padding: "12px 24px", fontSize: 16 }}
         >
-          Go to Dashboard
+          {isSubmitting ? "Opening..." : "Go to Dashboard"}
         </button>
+        {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}
       </div>
     );
   }
