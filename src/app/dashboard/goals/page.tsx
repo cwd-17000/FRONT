@@ -72,39 +72,42 @@ export default async function GoalsPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {goals.map((goal) => (
-            <div key={goal.id} style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              padding: 20,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{goal.name}</h3>
-                {goal.description && (
-                  <p style={{ color: "#666", margin: "4px 0 0", fontSize: 14 }}>
-                    {goal.description}
-                  </p>
-                )}
-                {goal.targetMetric && (
-                  <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-                    Target: {goal.targetValue} {goal.targetMetric}
-                  </p>
-                )}
-              </div>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                padding: "4px 10px",
-                borderRadius: 12,
-                background: "#f3f4f6",
-                color: STATUS_COLORS[goal.status] ?? "#333",
-                textTransform: "capitalize",
+            <Link key={goal.id} href={`/dashboard/goals/${goal.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <div style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: 20,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                cursor: "pointer",
               }}>
-                {goal.status}
-              </span>
-            </div>
+                <div>
+                  <h3 style={{ margin: 0 }}>{goal.name}</h3>
+                  {goal.description && (
+                    <p style={{ color: "#666", margin: "4px 0 0", fontSize: 14 }}>
+                      {goal.description}
+                    </p>
+                  )}
+                  {goal.targetMetric && (
+                    <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+                      Target: {goal.targetValue} {goal.targetMetric}
+                    </p>
+                  )}
+                </div>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  background: "#f3f4f6",
+                  color: STATUS_COLORS[goal.status] ?? "#333",
+                  textTransform: "capitalize",
+                }}>
+                  {goal.status}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       )}

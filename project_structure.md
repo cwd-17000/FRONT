@@ -1,12 +1,12 @@
 # 📁 marketing-platform-web - Project Structure
 
-*Generated on: 3/6/2026, 3:48:29 PM*
+*Generated on: 3/10/2026, 11:37:06 AM*
 
 ## 📋 Quick Overview
 
 | Metric | Value |
 |--------|-------|
-| 📄 Total Files | 33 |
+| 📄 Total Files | 32 |
 | 📁 Total Folders | 13 |
 | 🌳 Max Depth | 5 levels |
 | 🛠️ Tech Stack | React, Next.js, TypeScript, CSS, Node.js |
@@ -25,31 +25,30 @@
 
 ### By File Type
 
-- ⚛️ **.tsx** (React TypeScript files): 13 files (39.4%)
-- 🎨 **.svg** (SVG images): 5 files (15.2%)
-- 🔷 **.ts** (TypeScript files): 4 files (12.1%)
-- ⚙️ **.json** (JSON files): 3 files (9.1%)
-- 📄 **.mjs** (Other files): 2 files (6.1%)
-- 📖 **.md** (Markdown files): 2 files (6.1%)
-- 📄 **.example** (Other files): 1 files (3.0%)
-- 🚫 **.gitignore** (Git ignore): 1 files (3.0%)
-- 🖼️ **.ico** (Icon files): 1 files (3.0%)
-- 🎨 **.css** (Stylesheets): 1 files (3.0%)
+- ⚛️ **.tsx** (React TypeScript files): 13 files (40.6%)
+- 🎨 **.svg** (SVG images): 5 files (15.6%)
+- 🔷 **.ts** (TypeScript files): 4 files (12.5%)
+- ⚙️ **.json** (JSON files): 3 files (9.4%)
+- 📄 **.mjs** (Other files): 2 files (6.3%)
+- 📖 **.md** (Markdown files): 2 files (6.3%)
+- 🚫 **.gitignore** (Git ignore): 1 files (3.1%)
+- 🖼️ **.ico** (Icon files): 1 files (3.1%)
+- 🎨 **.css** (Stylesheets): 1 files (3.1%)
 
 ### By Category
 
-- **React**: 13 files (39.4%)
-- **Assets**: 6 files (18.2%)
-- **TypeScript**: 4 files (12.1%)
-- **Other**: 3 files (9.1%)
-- **Config**: 3 files (9.1%)
-- **Docs**: 2 files (6.1%)
-- **DevOps**: 1 files (3.0%)
-- **Styles**: 1 files (3.0%)
+- **React**: 13 files (40.6%)
+- **Assets**: 6 files (18.8%)
+- **TypeScript**: 4 files (12.5%)
+- **Config**: 3 files (9.4%)
+- **Other**: 2 files (6.3%)
+- **Docs**: 2 files (6.3%)
+- **DevOps**: 1 files (3.1%)
+- **Styles**: 1 files (3.1%)
 
 ### 📁 Largest Directories
 
-- **root**: 33 files
+- **root**: 32 files
 - **src**: 17 files
 - **src\app**: 16 files
 - **src\app\dashboard**: 6 files
@@ -59,7 +58,6 @@
 
 ```
 marketing-platform-web/
-├── 📄 .env.example
 ├── 🟡 🚫 **.gitignore**
 ├── 🔵 🔍 **eslint.config.mjs**
 ├── 🔷 next-env.d.ts
@@ -110,8 +108,8 @@ marketing-platform-web/
 ## 📖 Legend
 
 ### File Types
-- 📄 Other: Other files
 - 🚫 DevOps: Git ignore
+- 📄 Other: Other files
 - 🔷 TypeScript: TypeScript files
 - ⚙️ Config: JSON files
 - 📖 Docs: Markdown files
