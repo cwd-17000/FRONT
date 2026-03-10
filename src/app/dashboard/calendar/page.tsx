@@ -18,7 +18,7 @@ function decodeJwtPayload(token: string) {
 interface CalendarEvent {
   id: string;
   title: string;
-  date: string; // ISO date string e.g. "2026-03-15"
+  startDate: string; // ISO date string e.g. "2026-03-15T00:00:00.000Z"
   initiativeName?: string;
 }
 
@@ -48,8 +48,8 @@ export default async function CalendarPage() {
 
   // Group events by "YYYY-MM-DD" for O(1) lookup in the grid
   const eventsByDate: Record<string, CalendarEvent[]> = {};
-  for (const event of events) {
-    const key = event.date.slice(0, 10);
+  for (const event of (events ?? [])) {
+    const key = (event.startDate ?? "").slice(0, 10);
     if (!eventsByDate[key]) eventsByDate[key] = [];
     eventsByDate[key].push(event);
   }
@@ -183,7 +183,7 @@ export default async function CalendarPage() {
       </div>
 
       {/* Events with no renderable date or overflow — list below empty state */}
-      {events.length === 0 && (
+      {(events ?? []).length === 0 && (
         <div style={{ textAlign: "center", padding: "48px 0", color: "#666" }}>
           <p>No events this month. Create your first calendar event to get started.</p>
           <Link href="/dashboard/calendar/new">
