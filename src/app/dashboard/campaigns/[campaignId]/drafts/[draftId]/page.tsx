@@ -3,23 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-
-// ─── Auth helpers ──────────────────────────────────────────────────────────────
-
-function getAuthInfo(): { orgId: string | null; permissions: string[] } {
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  if (!match) return { orgId: null, permissions: [] };
-  try {
-    const base64 = match[1].split(".")[1];
-    const decoded = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
-    return {
-      orgId: decoded.activeOrgId ?? null,
-      permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],
-    };
-  } catch {
-    return { orgId: null, permissions: [] };
-  }
-}
+import { useMe } from "@/hooks/useMe";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,6 +46,7 @@ const AUTOSAVE_INTERVAL_MS = 30_000;
 export default function DraftEditorPage() {
   const { campaignId, draftId } = useParams<{ campaignId: string; draftId: string }>();
   const router = useRouter();
+  const { me, loading: meLoading } = useMe();
 
   // Editor state
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -90,9 +75,8 @@ export default function DraftEditorPage() {
   const [newComment, setNewComment] = useState("");
   const [postingComment, setPostingComment] = useState(false);
 
-  // Permissions
-  const [canApprove, setCanApprove] = useState(false);
-  const [orgId, setOrgId] = useState<string | null>(null);
+  // Derived from useMe
+  const canApprove = me?.permissions.includes("drafts.approve") ?? false;
 
   // Autosave tracking
   const lastSavedRef = useRef({ subject: "", body: "" });
@@ -102,18 +86,16 @@ export default function DraftEditorPage() {
   );
 
   // ── Base URL helper ──
-  const base = orgId
-    ? `/api/organizations/${orgId}/campaigns/${campaignId}/drafts/${draftId}`
+  const base = me?.activeOrgId
+    ? `/api/organizations/${me.activeOrgId}/campaigns/${campaignId}/drafts/${draftId}`
     : null;
 
   // ── Initial load ──
   useEffect(() => {
-    const { orgId: id, permissions } = getAuthInfo();
-    if (!id) { router.push("/login"); return; }
-    setOrgId(id);
-    setCanApprove(permissions.includes("drafts.approve"));
+    if (meLoading) return;
+    if (!me?.activeOrgId) { router.push("/login"); return; }
 
-    const apiBase = `/api/organizations/${id}/campaigns/${campaignId}/drafts/${draftId}`;
+    const apiBase = `/api/organizations/${me.activeOrgId}/campaigns/${campaignId}/drafts/${draftId}`;
 
     async function load() {
       try {
@@ -141,7 +123,7 @@ export default function DraftEditorPage() {
     }
 
     load();
-  }, [campaignId, draftId, router]);
+  }, [me, meLoading, campaignId, draftId, router]);
 
   // ── Autosave every 30 s if changes detected ──
   useEffect(() => {
@@ -348,7 +330,7 @@ export default function DraftEditorPage() {
   }
 
   // ── Render ──
-  if (loading) {
+  if (meLoading || loading) {
     return <div style={{ padding: 40, color: "#666" }}>Loading...</div>;
   }
 

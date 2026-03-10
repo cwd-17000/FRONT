@@ -3,18 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-
-function getActiveOrgId(): string | null {
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  if (!match) return null;
-  try {
-    const base64 = match[1].split(".")[1];
-    const decoded = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
-    return decoded.activeOrgId ?? null;
-  } catch {
-    return null;
-  }
-}
+import { useMe } from "@/hooks/useMe";
 
 interface Campaign {
   id: string;
@@ -48,19 +37,19 @@ const APPROVAL_COLORS: Record<string, string> = {
 export default function CampaignDetailPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
   const router = useRouter();
+  const { me, loading: meLoading } = useMe();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    const orgId = getActiveOrgId();
-    if (!orgId) {
-      router.push("/login");
-      return;
-    }
+    if (meLoading) return;
+    if (!me?.activeOrgId) { router.push("/login"); return; }
+
+    const orgId = me.activeOrgId;
 
     async function load() {
       try {
@@ -80,21 +69,20 @@ export default function CampaignDetailPage() {
       } catch {
         setError("Failed to load campaign data.");
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     }
 
     load();
-  }, [campaignId, router]);
+  }, [me, meLoading, campaignId, router]);
 
   async function handleNewDraft() {
-    const orgId = getActiveOrgId();
-    if (!orgId) return;
+    if (!me?.activeOrgId) return;
     setIsCreatingDraft(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/organizations/${orgId}/campaigns/${campaignId}/drafts`, {
+      const res = await fetch(`/api/organizations/${me.activeOrgId}/campaigns/${campaignId}/drafts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -116,7 +104,7 @@ export default function CampaignDetailPage() {
     }
   }
 
-  if (loading) {
+  if (meLoading || dataLoading) {
     return <div style={{ padding: 40, color: "#666" }}>Loading...</div>;
   }
 

@@ -3,18 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-function getActiveOrgId(): string | null {
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  if (!match) return null;
-  try {
-    const base64 = match[1].split(".")[1];
-    const decoded = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
-    return decoded.activeOrgId ?? null;
-  } catch {
-    return null;
-  }
-}
+import { useMe } from "@/hooks/useMe";
 
 interface Campaign {
   id: string;
@@ -46,13 +35,16 @@ const SECTIONS: Array<{ key: ApprovalStatus; heading: string }> = [
 
 export default function ApprovalsPage() {
   const router = useRouter();
+  const { me, loading: meLoading } = useMe();
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const orgId = getActiveOrgId();
-    if (!orgId) { router.push("/login"); return; }
+    if (meLoading) return;
+    if (!me?.activeOrgId) { router.push("/login"); return; }
+
+    const orgId = me.activeOrgId;
 
     async function load() {
       try {
@@ -60,7 +52,7 @@ export default function ApprovalsPage() {
           `/api/organizations/${orgId}/campaigns`,
           { credentials: "include" }
         );
-        if (!campaignsRes.ok) { setLoading(false); return; }
+        if (!campaignsRes.ok) { setDataLoading(false); return; }
 
         const campaigns: Campaign[] = await campaignsRes.json();
 
@@ -86,12 +78,12 @@ export default function ApprovalsPage() {
       } catch {
         setError("Failed to load approvals.");
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     }
 
     load();
-  }, [router]);
+  }, [me, meLoading, router]);
 
   const grouped: Record<ApprovalStatus, Draft[]> = {
     pending:  (drafts ?? []).filter((d) => d.approvalStatus === "pending"),
@@ -101,7 +93,7 @@ export default function ApprovalsPage() {
 
   const totalDrafts = (drafts ?? []).length;
 
-  if (loading) {
+  if (meLoading || dataLoading) {
     return <div style={{ padding: 40, color: "#666" }}>Loading...</div>;
   }
 
