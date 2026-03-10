@@ -31,6 +31,11 @@ interface Initiative {
   goalId?: string;
 }
 
+interface InitiativeDashboard {
+  campaignCount?: number;
+  campaigns?: unknown[];
+}
+
 const STATUS_COLORS: Record<string, string> = {
   planned: "#6b7280",
   active: "#16a34a",
@@ -68,9 +73,30 @@ export default async function GoalDetailPage({
   const allInitiatives: Initiative[] = initiativesRes.ok ? await initiativesRes.json() : [];
   const initiatives = allInitiatives.filter((i) => i.goalId === id);
 
+  // Fetch each initiative's dashboard in parallel for campaign counts
+  const dashboardResults = await Promise.all(
+    initiatives.map((initiative) =>
+      fetch(`${base}/initiatives/${initiative.id}/dashboard`, { headers, cache: "no-store" })
+        .then((r): Promise<InitiativeDashboard | null> => r.ok ? r.json() : Promise.resolve(null))
+        .catch(() => null)
+    )
+  );
+
+  const campaignCounts: Record<string, number> = {};
+  initiatives.forEach((initiative, i) => {
+    const data = dashboardResults[i];
+    if (data?.campaignCount !== undefined) {
+      campaignCounts[initiative.id] = data.campaignCount;
+    } else if (Array.isArray(data?.campaigns)) {
+      campaignCounts[initiative.id] = data.campaigns.length;
+    } else {
+      campaignCounts[initiative.id] = 0;
+    }
+  });
+
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
-      {/* Header */}
+      {/* Goal header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
         <div>
           <h1 style={{ margin: 0 }}>{goal.name}</h1>
@@ -114,35 +140,47 @@ export default async function GoalDetailPage({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {initiatives.map((initiative) => (
-              <div key={initiative.id} style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                padding: 16,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 15 }}>{initiative.name}</h3>
-                  {initiative.description && (
-                    <p style={{ color: "#666", margin: "4px 0 0", fontSize: 13 }}>
-                      {initiative.description}
-                    </p>
-                  )}
-                </div>
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "4px 10px",
-                  borderRadius: 12,
-                  background: "#f3f4f6",
-                  color: STATUS_COLORS[initiative.status] ?? "#333",
-                  textTransform: "capitalize",
-                  whiteSpace: "nowrap",
+              <Link
+                key={initiative.id}
+                href={`/dashboard/initiatives/${initiative.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <div style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  padding: 16,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  cursor: "pointer",
                 }}>
-                  {initiative.status}
-                </span>
-              </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 15 }}>{initiative.name}</h3>
+                    {initiative.description && (
+                      <p style={{ color: "#666", margin: "4px 0 0", fontSize: 13 }}>
+                        {initiative.description}
+                      </p>
+                    )}
+                    <p style={{ fontSize: 12, color: "#888", marginTop: 6 }}>
+                      {campaignCounts[initiative.id] === 1
+                        ? "1 campaign"
+                        : `${campaignCounts[initiative.id]} campaigns`}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "4px 10px",
+                    borderRadius: 12,
+                    background: "#f3f4f6",
+                    color: STATUS_COLORS[initiative.status] ?? "#333",
+                    textTransform: "capitalize",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {initiative.status}
+                  </span>
+                </div>
+              </Link>
             ))}
           </div>
         )}

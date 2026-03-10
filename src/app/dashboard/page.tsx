@@ -1,6 +1,7 @@
 // app/dashboard/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import LogoutButton from "./LogoutButton";
 import OrgSwitcher from "./OrgSwitcher";
 
@@ -41,6 +42,25 @@ export default async function DashboardPage() {
 
   const orgs = await getMyOrgs(tokenCookie.value);
 
+  const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
+  const headers = { cookie: `access_token=${tokenCookie.value}` };
+
+  const [goalsRes, initiativesRes, campaignsRes] = await Promise.all([
+    fetch(`${base}/goals`, { headers, cache: "no-store" }),
+    fetch(`${base}/initiatives`, { headers, cache: "no-store" }),
+    fetch(`${base}/campaigns`, { headers, cache: "no-store" }),
+  ]);
+
+  const [goals, initiatives, campaigns] = await Promise.all([
+    goalsRes.ok ? goalsRes.json() : [],
+    initiativesRes.ok ? initiativesRes.json() : [],
+    campaignsRes.ok ? campaignsRes.json() : [],
+  ]);
+
+  const goalCount: number = goals.length;
+  const initiativeCount: number = initiatives.length;
+  const campaignCount: number = campaigns.length;
+
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -59,20 +79,25 @@ export default async function DashboardPage() {
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Quick Actions</h2>
-<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-  <a href="/dashboard/goals">
-    <button>Goals</button>
-  </a>
-  <a href="/dashboard/initiatives">
-    <button>Initiatives</button>
-  </a>
-  <a href="/dashboard/campaigns">
-    <button>Campaigns</button>
-  </a>
-  <a href="/dashboard/members">
-    <button>Manage Members</button>
-  </a>
-</div>
+      <p style={{ color: "#888", fontSize: 14, marginBottom: 16 }}>
+        {goalCount} {goalCount === 1 ? "Goal" : "Goals"} &middot;{" "}
+        {initiativeCount} {initiativeCount === 1 ? "Initiative" : "Initiatives"} &middot;{" "}
+        {campaignCount} {campaignCount === 1 ? "Campaign" : "Campaigns"}
+      </p>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Link href="/dashboard/goals">
+          <button>Goals</button>
+        </Link>
+        <Link href="/dashboard/initiatives">
+          <button>Initiatives</button>
+        </Link>
+        <Link href="/dashboard/campaigns">
+          <button>Campaigns</button>
+        </Link>
+        <Link href="/dashboard/members">
+          <button>Manage Members</button>
+        </Link>
+      </div>
     </div>
   );
 }
