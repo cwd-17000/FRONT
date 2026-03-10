@@ -51,6 +51,22 @@ export default async function CampaignsPage() {
 
   const campaigns: Campaign[] = res.ok ? await res.json() : [];
 
+  const headers = { cookie: `access_token=${token.value}` };
+  const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
+
+  const draftCounts: Record<string, number> = {};
+  await Promise.all(
+    campaigns.map(async (campaign) => {
+      try {
+        const r = await fetch(`${base}/campaigns/${campaign.id}/drafts`, { headers, cache: "no-store" });
+        const drafts = r.ok ? await r.json() : [];
+        draftCounts[campaign.id] = Array.isArray(drafts) ? drafts.length : 0;
+      } catch {
+        draftCounts[campaign.id] = 0;
+      }
+    })
+  );
+
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -70,34 +86,40 @@ export default async function CampaignsPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {campaigns.map((campaign) => (
-            <div key={campaign.id} style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              padding: 20,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{campaign.name}</h3>
-                {campaign.initiativeName && (
-                  <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-                    Initiative: {campaign.initiativeName}
-                  </p>
-                )}
-              </div>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                padding: "4px 10px",
-                borderRadius: 12,
-                background: "#f3f4f6",
-                color: STATUS_COLORS[campaign.status] ?? "#333",
-                textTransform: "capitalize",
+            <Link key={campaign.id} href={`/dashboard/campaigns/${campaign.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <div style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: 20,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                cursor: "pointer",
               }}>
-                {campaign.status}
-              </span>
-            </div>
+                <div>
+                  <h3 style={{ margin: 0 }}>{campaign.name}</h3>
+                  {campaign.initiativeName && (
+                    <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
+                      Initiative: {campaign.initiativeName}
+                    </p>
+                  )}
+                  <p style={{ fontSize: 12, color: "#aaa", marginTop: 6 }}>
+                    {draftCounts[campaign.id] === 1 ? "1 draft" : `${draftCounts[campaign.id] ?? 0} drafts`}
+                  </p>
+                </div>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  background: "#f3f4f6",
+                  color: STATUS_COLORS[campaign.status] ?? "#333",
+                  textTransform: "capitalize",
+                }}>
+                  {campaign.status}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       )}

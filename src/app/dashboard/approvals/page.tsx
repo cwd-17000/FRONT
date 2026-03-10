@@ -1,15 +1,16 @@
-// app/dashboard/approvals/page.tsx
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-function decodeJwtPayload(token: string) {
+function getActiveOrgId(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+  if (!match) return null;
   try {
-    const base64 = token.split(".")[1];
-    const decoded = Buffer.from(base64, "base64url").toString("utf-8");
-    return JSON.parse(decoded) as {
-      activeOrgId: string | null;
-    };
+    const base64 = match[1].split(".")[1];
+    const decoded = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
+    return decoded.activeOrgId ?? null;
   } catch {
     return null;
   }
@@ -24,7 +25,8 @@ interface Draft {
   id: string;
   name: string;
   approvalStatus: "pending" | "approved" | "rejected";
-  // attached after fetch
+  updatedAt?: string;
+  campaignId: string;
   campaignName: string;
 }
 
@@ -34,47 +36,74 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   rejected: { label: "Rejected",       color: "#dc2626" },
 };
 
-const SECTIONS: Array<{ key: Draft["approvalStatus"]; heading: string }> = [
+type ApprovalStatus = "pending" | "approved" | "rejected";
+
+const SECTIONS: Array<{ key: ApprovalStatus; heading: string }> = [
   { key: "pending",  heading: "Pending Review" },
   { key: "approved", heading: "Approved" },
   { key: "rejected", heading: "Rejected" },
 ];
 
-export default async function ApprovalsPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("access_token");
-  if (!token) redirect("/login");
+export default function ApprovalsPage() {
+  const router = useRouter();
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const user = decodeJwtPayload(token.value);
-  if (!user?.activeOrgId) redirect("/onboarding");
+  useEffect(() => {
+    const orgId = getActiveOrgId();
+    if (!orgId) { router.push("/login"); return; }
 
-  const headers = { cookie: `access_token=${token.value}` };
-  const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
+    async function load() {
+      try {
+        const campaignsRes = await fetch(
+          `/api/organizations/${orgId}/campaigns`,
+          { credentials: "include" }
+        );
+        if (!campaignsRes.ok) { setLoading(false); return; }
 
-  const campaignsRes = await fetch(`${base}/campaigns`, { headers, cache: "no-store" });
-  const campaigns: Campaign[] = campaignsRes.ok ? await campaignsRes.json() : [];
+        const campaigns: Campaign[] = await campaignsRes.json();
 
-  // Fetch all campaign drafts in parallel
-  const draftResults = await Promise.all(
-    campaigns.map((campaign) =>
-      fetch(`${base}/campaigns/${campaign.id}/drafts`, { headers, cache: "no-store" })
-        .then((r): Promise<Omit<Draft, "campaignName">[]> => r.ok ? r.json() : Promise.resolve([]))
-        .catch(() => [] as Omit<Draft, "campaignName">[])
-    )
-  );
+        const draftResults = await Promise.all(
+          (campaigns ?? []).map((campaign) =>
+            fetch(
+              `/api/organizations/${orgId}/campaigns/${campaign.id}/drafts`,
+              { credentials: "include" }
+            )
+              .then((r) => r.ok ? r.json() : [])
+              .catch(() => [])
+              .then((ds: Omit<Draft, "campaignId" | "campaignName">[]) =>
+                (ds ?? []).map((d) => ({
+                  ...d,
+                  campaignId: campaign.id,
+                  campaignName: campaign.name,
+                }))
+              )
+          )
+        );
 
-  // Flatten and attach campaign name to each draft
-  const drafts: Draft[] = draftResults.flatMap((campaignDrafts, i) =>
-    campaignDrafts.map((draft) => ({ ...draft, campaignName: campaigns[i].name }))
-  );
+        setDrafts((draftResults ?? []).flat());
+      } catch {
+        setError("Failed to load approvals.");
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const grouped: Record<Draft["approvalStatus"], Draft[]> = {
-    pending:  drafts.filter((d) => d.approvalStatus === "pending"),
-    approved: drafts.filter((d) => d.approvalStatus === "approved"),
-    rejected: drafts.filter((d) => d.approvalStatus === "rejected"),
+    load();
+  }, [router]);
+
+  const grouped: Record<ApprovalStatus, Draft[]> = {
+    pending:  (drafts ?? []).filter((d) => d.approvalStatus === "pending"),
+    approved: (drafts ?? []).filter((d) => d.approvalStatus === "approved"),
+    rejected: (drafts ?? []).filter((d) => d.approvalStatus === "rejected"),
   };
 
-  const totalDrafts = drafts.length;
+  const totalDrafts = (drafts ?? []).length;
+
+  if (loading) {
+    return <div style={{ padding: 40, color: "#666" }}>Loading...</div>;
+  }
 
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
@@ -87,6 +116,8 @@ export default async function ApprovalsPage() {
         )}
       </div>
 
+      {error && <p style={{ color: "crimson", marginBottom: 16 }}>{error}</p>}
+
       {totalDrafts === 0 ? (
         <div style={{ textAlign: "center", padding: 60, color: "#666" }}>
           <p>No drafts found. Drafts will appear here once campaigns have content to review.</p>
@@ -95,44 +126,68 @@ export default async function ApprovalsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
           {SECTIONS.map(({ key, heading }) => {
             const sectionDrafts = grouped[key];
-            if (sectionDrafts.length === 0) return null;
             const badge = STATUS_BADGE[key];
 
             return (
               <div key={key}>
-                <h2 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: badge.color }}>
+                <h2 style={{
+                  margin: "0 0 12px",
+                  fontSize: key === "pending" ? 18 : 16,
+                  fontWeight: key === "pending" ? 700 : 600,
+                  color: badge.color,
+                }}>
                   {heading} ({sectionDrafts.length})
                 </h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {sectionDrafts.map((draft) => (
-                    <div key={draft.id} style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 8,
-                      padding: 16,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                    }}>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: 15 }}>{draft.name}</h3>
-                        <p style={{ fontSize: 13, color: "#888", margin: "4px 0 0" }}>
-                          Campaign: {draft.campaignName}
-                        </p>
-                      </div>
-                      <span style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        padding: "4px 10px",
-                        borderRadius: 12,
-                        background: "#f3f4f6",
-                        color: badge.color,
-                        whiteSpace: "nowrap",
-                      }}>
-                        {badge.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+
+                {(sectionDrafts ?? []).length === 0 ? (
+                  <div style={{ fontSize: 13, color: "#aaa", padding: "8px 0" }}>
+                    No {heading.toLowerCase()} drafts.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {(sectionDrafts ?? []).map((draft) => (
+                      <Link
+                        key={draft.id}
+                        href={`/dashboard/campaigns/${draft.campaignId}/drafts/${draft.id}`}
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
+                        <div style={{
+                          border: `1px solid ${key === "pending" ? "#fde68a" : "#e5e7eb"}`,
+                          borderRadius: 8,
+                          padding: 16,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          cursor: "pointer",
+                          background: key === "pending" ? "#fffbeb" : "#fff",
+                        }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: 15 }}>{draft.name}</h3>
+                            <p style={{ fontSize: 13, color: "#888", margin: "4px 0 0" }}>
+                              Campaign: {draft.campaignName}
+                            </p>
+                            {draft.updatedAt && (
+                              <p style={{ fontSize: 12, color: "#aaa", margin: "4px 0 0" }}>
+                                Last edited: {new Date(draft.updatedAt).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            padding: "4px 10px",
+                            borderRadius: 12,
+                            background: "#f3f4f6",
+                            color: badge.color,
+                            whiteSpace: "nowrap",
+                          }}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

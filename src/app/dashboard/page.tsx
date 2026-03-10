@@ -94,7 +94,9 @@ export default async function DashboardPage() {
         {goalCount} {goalCount === 1 ? "Goal" : "Goals"} &middot;{" "}
         {initiativeCount} {initiativeCount === 1 ? "Initiative" : "Initiatives"} &middot;{" "}
         {campaignCount} {campaignCount === 1 ? "Campaign" : "Campaigns"} &middot;{" "}
-        {pendingCount} {pendingCount === 1 ? "Pending Approval" : "Pending Approvals"}
+        <span style={{ color: pendingCount > 0 ? "#d97706" : "inherit", fontWeight: pendingCount > 0 ? 600 : 400 }}>
+          {pendingCount} {pendingCount === 1 ? "Pending" : "Pending"}
+        </span>
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Link href="/dashboard/goals">
