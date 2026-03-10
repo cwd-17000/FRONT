@@ -17,7 +17,7 @@ export default function NewCalendarEventForm({ activeOrgId, initiatives }: Props
   const router = useRouter();
   const [form, setForm] = useState({
     title: "",
-    date: "",
+    startDate: "",
     endDate: "",
     initiativeId: "",
     description: "",
@@ -43,8 +43,9 @@ export default function NewCalendarEventForm({ activeOrgId, initiatives }: Props
         credentials: "include",
         body: JSON.stringify({
           title: form.title.trim(),
-          date: form.date,
-          endDate: form.endDate || undefined,
+          eventType: "general",
+          startDate: new Date(form.startDate).toISOString(),
+          endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
           initiativeId: form.initiativeId || undefined,
           description: form.description.trim() || undefined,
         }),
@@ -88,9 +89,9 @@ export default function NewCalendarEventForm({ activeOrgId, initiatives }: Props
               Start date *
             </label>
             <input
-              name="date"
+              name="startDate"
               type="date"
-              value={form.date}
+              value={form.startDate}
               onChange={handleChange}
               required
               style={{ width: "100%", padding: "10px", fontSize: 15 }}
@@ -105,7 +106,7 @@ export default function NewCalendarEventForm({ activeOrgId, initiatives }: Props
               type="date"
               value={form.endDate}
               onChange={handleChange}
-              min={form.date || undefined}
+              min={form.startDate || undefined}
               style={{ width: "100%", padding: "10px", fontSize: 15 }}
             />
           </div>
@@ -147,7 +148,7 @@ export default function NewCalendarEventForm({ activeOrgId, initiatives }: Props
         <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
           <button
             type="submit"
-            disabled={isSubmitting || !form.title.trim() || !form.date}
+            disabled={isSubmitting || !form.title.trim() || !form.startDate}
             style={{ padding: "12px 28px", fontSize: 15 }}
           >
             {isSubmitting ? "Creating..." : "Create Event"}
