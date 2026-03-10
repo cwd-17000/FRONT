@@ -57,6 +57,17 @@ export default async function DashboardPage() {
     campaignsRes.ok ? campaignsRes.json() : [],
   ]);
 
+  // Fetch drafts for every campaign in parallel to compute pending count
+  const draftResults = await Promise.all(
+    (campaigns as { id: string }[]).map((c) =>
+      fetch(`${base}/campaigns/${c.id}/drafts`, { headers, cache: "no-store" })
+        .then((r) => r.ok ? r.json() : [])
+        .catch(() => [])
+    )
+  );
+  const allDrafts = (draftResults as { approvalStatus: string }[][]).flat();
+  const pendingCount: number = allDrafts.filter((d) => d.approvalStatus === "pending").length;
+
   const goalCount: number = goals.length;
   const initiativeCount: number = initiatives.length;
   const campaignCount: number = campaigns.length;
@@ -82,7 +93,8 @@ export default async function DashboardPage() {
       <p style={{ color: "#888", fontSize: 14, marginBottom: 16 }}>
         {goalCount} {goalCount === 1 ? "Goal" : "Goals"} &middot;{" "}
         {initiativeCount} {initiativeCount === 1 ? "Initiative" : "Initiatives"} &middot;{" "}
-        {campaignCount} {campaignCount === 1 ? "Campaign" : "Campaigns"}
+        {campaignCount} {campaignCount === 1 ? "Campaign" : "Campaigns"} &middot;{" "}
+        {pendingCount} {pendingCount === 1 ? "Pending Approval" : "Pending Approvals"}
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Link href="/dashboard/goals">
@@ -93,6 +105,12 @@ export default async function DashboardPage() {
         </Link>
         <Link href="/dashboard/campaigns">
           <button>Campaigns</button>
+        </Link>
+        <Link href="/dashboard/calendar">
+          <button>Calendar</button>
+        </Link>
+        <Link href="/dashboard/approvals">
+          <button>Approvals</button>
         </Link>
         <Link href="/dashboard/members">
           <button>Manage Members</button>
