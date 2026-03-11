@@ -36,7 +36,7 @@ export default async function CheckInPage({
 
   const goal = await res.json();
 
-  if (goal.status !== "ACTIVE") {
+  if (goal.type === "OBJECTIVE" || goal.status !== "ACTIVE") {
     redirect(`/dashboard/goals/${id}`);
   }
 

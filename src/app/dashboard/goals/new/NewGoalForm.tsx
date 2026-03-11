@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type GoalType = "OBJECTIVE" | "KEY_RESULT";
+type GoalTimeframe = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
 
 interface ParentGoal {
   id: string;
@@ -12,10 +13,23 @@ interface ParentGoal {
   timeframe: string;
 }
 
+interface Member {
+  userId: string;
+  name: string;
+}
+
 interface Props {
   activeOrgId: string;
   parentGoals: ParentGoal[];
+  members: Member[];
 }
+
+const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
+  { value: "ANNUAL", label: "Annual" },
+  { value: "QUARTERLY", label: "Quarterly" },
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "WEEKLY", label: "Weekly" },
+];
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -34,7 +48,7 @@ const labelStyle: React.CSSProperties = {
   fontSize: 14,
 };
 
-export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
+export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,15 +56,23 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
 
   const [selectedType, setSelectedType] = useState<GoalType | null>(null);
   const [title, setTitle] = useState("");
+  const [timeframe, setTimeframe] = useState<GoalTimeframe | "">("");
+  const [ownerId, setOwnerId] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("");
   const [parentGoalId, setParentGoalId] = useState("");
 
   const objectives = parentGoals.filter((g) => g.type === "OBJECTIVE");
 
+  const canSubmit =
+    selectedType !== null &&
+    title.trim().length > 0 &&
+    timeframe !== "" &&
+    (selectedType !== "KEY_RESULT" || parentGoalId !== "");
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!selectedType || !title.trim()) return;
+    if (!canSubmit || !selectedType) return;
     setError(null);
     setIsSubmitting(true);
 
@@ -58,8 +80,10 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
       const body: Record<string, unknown> = {
         title: title.trim(),
         type: selectedType,
+        timeframe,
         status: "ACTIVE",
       };
+      if (ownerId) body.ownerId = ownerId;
       if (targetValue) body.targetValue = parseFloat(targetValue);
       if (unit.trim()) body.unit = unit.trim();
       if (parentGoalId) body.parentGoalId = parentGoalId;
@@ -85,11 +109,6 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
       setIsSubmitting(false);
     }
   }
-
-  const canSubmit =
-    selectedType !== null &&
-    title.trim().length > 0 &&
-    (selectedType !== "KEY_RESULT" || parentGoalId !== "");
 
   return (
     <div style={{ padding: "40px", maxWidth: 560, margin: "0 auto" }}>
@@ -163,7 +182,7 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
       {step === 2 && selectedType && (
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -178,7 +197,8 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Title — the only field for Objectives */}
+
+            {/* Title */}
             <div>
               <label style={labelStyle}>Title *</label>
               <input
@@ -195,35 +215,79 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
               />
             </div>
 
-            {/* Key Result fields */}
-            {selectedType === "KEY_RESULT" && (
-              <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <label style={labelStyle}>Target Value</label>
-                    <input
-                      type="number"
-                      value={targetValue}
-                      onChange={(e) => setTargetValue(e.target.value)}
-                      placeholder="e.g. 500"
-                      min="0"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Unit</label>
-                    <input
-                      value={unit}
-                      onChange={(e) => setUnit(e.target.value)}
-                      placeholder='e.g. "%", "calls", "$"'
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-              </>
+            {/* Timeframe */}
+            <div>
+              <label style={labelStyle}>Timeframe *</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {TIMEFRAME_OPTIONS.map((tf) => (
+                  <button
+                    key={tf.value}
+                    type="button"
+                    onClick={() => setTimeframe(tf.value)}
+                    style={{
+                      flex: 1,
+                      padding: "8px 4px",
+                      border: `2px solid ${timeframe === tf.value ? "#111827" : "#e5e7eb"}`,
+                      borderRadius: 8,
+                      background: timeframe === tf.value ? "#111827" : "#fff",
+                      color: timeframe === tf.value ? "#fff" : "#374151",
+                      fontSize: 13,
+                      fontWeight: timeframe === tf.value ? 600 : 400,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Owner */}
+            {members.length > 0 && (
+              <div>
+                <label style={labelStyle}>Owner</label>
+                <select
+                  value={ownerId}
+                  onChange={(e) => setOwnerId(e.target.value)}
+                  style={{ ...inputStyle, background: "#fff" }}
+                >
+                  <option value="">— Assign to me —</option>
+                  {members.map((m) => (
+                    <option key={m.userId} value={m.userId}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
-            {/* Parent goal selector */}
+            {/* Key Result-only fields */}
+            {selectedType === "KEY_RESULT" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Target Value</label>
+                  <input
+                    type="number"
+                    value={targetValue}
+                    onChange={(e) => setTargetValue(e.target.value)}
+                    placeholder="e.g. 500"
+                    min="0"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Unit</label>
+                  <input
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    placeholder='e.g. "%", "calls", "$"'
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Parent objective */}
             <div>
               <label style={labelStyle}>
                 {selectedType === "OBJECTIVE" ? "Parent Objective (optional)" : "Parent Objective *"}
@@ -244,7 +308,7 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
                   <option value="">— None —</option>
                   {objectives.map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.title}
+                      {g.title} ({g.timeframe})
                     </option>
                   ))}
                 </select>

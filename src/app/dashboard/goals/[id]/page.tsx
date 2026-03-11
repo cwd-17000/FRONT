@@ -180,7 +180,9 @@ export default async function GoalDetailPage({
       : null;
 
   const isDueForCheckIn =
-    goal.status === "ACTIVE" && (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
+    goal.type === "KEY_RESULT" &&
+    goal.status === "ACTIVE" &&
+    (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
 
   return (
     <div style={{ padding: "32px 40px", maxWidth: 800, margin: "0 auto" }}>
@@ -275,7 +277,7 @@ export default async function GoalDetailPage({
           )}
         </div>
 
-        {goal.status === "ACTIVE" && (
+        {goal.type === "KEY_RESULT" && goal.status === "ACTIVE" && (
           <Link href={`/dashboard/goals/${id}/check-in`}>
             <button
               style={{
