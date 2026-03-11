@@ -46,7 +46,7 @@ export default function JoinOrgPage() {
     });
 
     if (res.ok) {
-      window.location.assign("/dashboard"); // new cookie is already set
+      window.location.assign("/onboarding/profile");
       return;
     }
 

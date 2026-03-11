@@ -89,10 +89,10 @@ export default function CreateOrgPage() {
           Save this code — team members will need it to join your organization.
         </p>
         <button
-  onClick={() => window.location.assign("/dashboard")}
+  onClick={() => window.location.assign("/onboarding/profile")}
   style={{ padding: "12px 24px", fontSize: 16 }}
 >
-  Go to Dashboard
+  Continue — Set Up Profile →
 </button>
 
         {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}

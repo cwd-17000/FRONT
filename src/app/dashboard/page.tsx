@@ -117,6 +117,9 @@ export default async function DashboardPage() {
         <Link href="/dashboard/members">
           <button>Manage Members</button>
         </Link>
+        <Link href="/dashboard/process-flows">
+          <button>Process Flows</button>
+        </Link>
       </div>
     </div>
   );

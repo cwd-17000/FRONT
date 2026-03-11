@@ -10,12 +10,18 @@ export async function GET(req: NextRequest) {
     const decoded = jwtDecode<{
       sub: string;
       email: string;
+      firstName: string | null;
+      lastName: string | null;
+      profileComplete: boolean;
       activeOrgId: string;
       permissions: string[];
     }>(token);
     return NextResponse.json({
       sub: decoded.sub,
       email: decoded.email,
+      firstName: decoded.firstName ?? null,
+      lastName: decoded.lastName ?? null,
+      profileComplete: decoded.profileComplete ?? false,
       activeOrgId: decoded.activeOrgId,
       permissions: decoded.permissions ?? [],
     });

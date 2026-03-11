@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 interface Me {
   sub: string;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
+  profileComplete: boolean;
   activeOrgId: string;
   permissions: string[];
 }
