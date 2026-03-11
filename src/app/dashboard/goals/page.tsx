@@ -59,8 +59,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 const TYPE_LABELS: Record<string, string> = {
   OBJECTIVE: "Objective",
   KEY_RESULT: "Key Result",
-  SMART: "SMART Goal",
-  INITIATIVE: "Initiative",
 };
 
 const TIMEFRAME_LABELS: Record<string, string> = {

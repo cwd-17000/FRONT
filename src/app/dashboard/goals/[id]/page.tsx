@@ -76,8 +76,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 const TYPE_LABELS: Record<string, string> = {
   OBJECTIVE: "Objective",
   KEY_RESULT: "Key Result",
-  SMART: "SMART Goal",
-  INITIATIVE: "Initiative",
 };
 const STATUS_COLORS_MAP: Record<string, string> = {
   DRAFT: "#9ca3af",
