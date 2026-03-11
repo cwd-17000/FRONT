@@ -454,7 +454,7 @@ export default function NewGoalForm({ activeOrgId, parentGoals }: Props) {
               type="button"
               disabled={!canAdvanceStep2()}
               onClick={() => setStep(3)}
-              style={btnPrimary(canAdvanceStep2())}
+              style={btnPrimary(!!canAdvanceStep2())}
             >
               Continue →
             </button>
