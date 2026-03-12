@@ -75,7 +75,7 @@ export default async function RitualDetailPage({
   ]);
 
   if (ritualRes.status === 404) notFound();
-  if (!ritualRes.ok) redirect("/dashboard/rituals");
+  if (!ritualRes.ok) redirect("/dashboard/cadence");
 
   const ritual: Ritual = await ritualRes.json();
   const checkIns: CheckIn[] = checkInsRes.ok ? await checkInsRes.json() : [];
@@ -84,8 +84,8 @@ export default async function RitualDetailPage({
     <div style={{ padding: "32px 40px", maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 8 }}>
-        <Link href="/dashboard/rituals" style={{ fontSize: 13, color: "#9ca3af" }}>
-          ← Rituals
+        <Link href="/dashboard/cadence" style={{ fontSize: 13, color: "#9ca3af" }}>
+          ← Cadence
         </Link>
       </div>
 
@@ -153,8 +153,8 @@ export default async function RitualDetailPage({
       />
 
       <div style={{ marginTop: 24 }}>
-        <Link href="/dashboard/rituals" style={{ fontSize: 14, color: "#6b7280" }}>
-          ← Back to Rituals
+        <Link href="/dashboard/cadence" style={{ fontSize: 14, color: "#6b7280" }}>
+          ← Back to Cadence
         </Link>
       </div>
     </div>

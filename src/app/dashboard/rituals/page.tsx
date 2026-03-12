@@ -71,13 +71,13 @@ export default async function RitualsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Rituals & Cadences</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Cadence</h1>
           <p style={{ fontSize: 14, color: "#6b7280", margin: "4px 0 0" }}>
             Recurring meetings tied to goals and processes.
           </p>
         </div>
         <Link
-          href="/dashboard/rituals/new"
+          href="/dashboard/cadence/new"
           style={{
             padding: "9px 18px",
             background: "#111827",
@@ -88,7 +88,7 @@ export default async function RitualsPage() {
             fontWeight: 600,
           }}
         >
-          + Schedule ritual
+          + Schedule cadence
         </Link>
       </div>
 
@@ -102,12 +102,12 @@ export default async function RitualsPage() {
             color: "#9ca3af",
           }}
         >
-          <p style={{ fontSize: 15, fontWeight: 500, margin: "0 0 8px" }}>No rituals yet</p>
+          <p style={{ fontSize: 15, fontWeight: 500, margin: "0 0 8px" }}>No cadence yet</p>
           <p style={{ fontSize: 13, margin: "0 0 20px" }}>
             Schedule your first recurring check-in — weekly growth review, monthly retro, etc.
           </p>
           <Link
-            href="/dashboard/rituals/new"
+            href="/dashboard/cadence/new"
             style={{
               padding: "8px 18px",
               background: "#111827",
@@ -117,7 +117,7 @@ export default async function RitualsPage() {
               fontSize: 13,
             }}
           >
-            + Schedule ritual
+            + Schedule cadence
           </Link>
         </div>
       ) : (
@@ -125,7 +125,7 @@ export default async function RitualsPage() {
           {rituals.map((r) => (
             <Link
               key={r.id}
-              href={`/dashboard/rituals/${r.id}`}
+              href={`/dashboard/cadence/${r.id}`}
               style={{ textDecoration: "none", color: "inherit" }}
             >
               <div

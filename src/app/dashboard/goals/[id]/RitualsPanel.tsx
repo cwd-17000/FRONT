@@ -49,18 +49,18 @@ export function RitualsPanel({
     <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-[#a1a1aa]">
-          Rituals ({rituals.length})
+          Cadence ({rituals.length})
         </h2>
-        <Link href={`/dashboard/rituals/new?goalId=${goalId}`}>
+        <Link href={`/dashboard/cadence/new?goalId=${goalId}`}>
           <Button variant="ghost" size="sm" className="gap-1 text-xs">
-            <Plus size={12} /> Schedule ritual
+            <Plus size={12} /> Schedule cadence
           </Button>
         </Link>
       </div>
 
       <div className="flex flex-col gap-2">
         {rituals.map((r) => (
-          <Link key={r.id} href={`/dashboard/rituals/${r.id}`}>
+          <Link key={r.id} href={`/dashboard/cadence/${r.id}`}>
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#27272a] bg-[#09090b] hover:border-[#3f3f46] hover:bg-[#18181b] transition-all duration-150">
               <span className="flex-1 text-sm font-medium text-[#fafafa] truncate">{r.name}</span>
               <Badge variant={RECURRENCE_VARIANT[r.recurrence] ?? "default"} className="text-[10px] shrink-0">
@@ -80,7 +80,7 @@ export function RitualsPanel({
           </Link>
         ))}
         {rituals.length === 0 && (
-          <p className="text-sm text-[#52525b]">No rituals linked to this goal yet.</p>
+          <p className="text-sm text-[#52525b]">No cadence linked to this goal yet.</p>
         )}
       </div>
     </section>

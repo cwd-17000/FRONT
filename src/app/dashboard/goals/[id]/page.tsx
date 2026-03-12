@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MilestonesPanel } from "./MilestonesPanel";
-import { ExternalCampaignsPanel } from "./ExternalCampaignsPanel";
 import { RitualsPanel } from "./RitualsPanel";
 
 function decodeJwtPayload(token: string) {
@@ -185,14 +184,12 @@ export default async function GoalDetailPage({
   const goal: Goal = await goalRes.json();
 
   const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
-  const [milestonesRes, campaignsRes, ritualsRes] = await Promise.all([
+  const [milestonesRes, ritualsRes] = await Promise.all([
     fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
-    fetch(`${extBase}/external-campaigns/by-goal/${id}`, { headers, cache: "no-store" }),
     fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" }),
   ]);
-  const [milestones, externalCampaigns, rituals] = await Promise.all([
+  const [milestones, rituals] = await Promise.all([
     milestonesRes.ok ? milestonesRes.json() : [],
-    campaignsRes.ok ? campaignsRes.json() : [],
     ritualsRes.ok ? ritualsRes.json() : [],
   ]);
 
@@ -319,11 +316,8 @@ export default async function GoalDetailPage({
                 <a href="#milestones" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
                   Add milestones
                 </a>
-                <a href="#rituals" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
-                  Schedule rituals
-                </a>
-                <a href="#campaigns" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
-                  Link campaigns / external efforts
+                <a href="#cadence" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                  Schedule cadence
                 </a>
               </div>
             </CardContent>
@@ -387,12 +381,8 @@ export default async function GoalDetailPage({
             <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
           </div>
 
-          <div id="rituals" className="scroll-mt-24">
+          <div id="cadence" className="scroll-mt-24">
             <RitualsPanel goalId={id} orgId={user.activeOrgId!} rituals={rituals} />
-          </div>
-
-          <div id="campaigns" className="scroll-mt-24">
-            <ExternalCampaignsPanel goalId={id} orgId={user.activeOrgId!} initialData={externalCampaigns} />
           </div>
         </>
       ) : (

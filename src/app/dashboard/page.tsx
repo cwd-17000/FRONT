@@ -41,7 +41,7 @@ const QUICK_LINKS = [
   { label: "Goals",          href: "/dashboard/goals",           icon: Target,     desc: "Track OKRs & key results" },
   { label: "Calendar",       href: "/dashboard/calendar",        icon: Calendar,   desc: "Events & milestones" },
   { label: "Process Flows",  href: "/dashboard/process-flows",   icon: GitBranch,  desc: "Workflows & SOPs" },
-  { label: "Rituals",        href: "/dashboard/rituals",         icon: RefreshCw,  desc: "Recurring ceremonies" },
+  { label: "Cadence",        href: "/dashboard/cadence",         icon: RefreshCw,  desc: "Recurring cadences" },
   { label: "My Organization",href: "/dashboard/my-organization", icon: Building2,  desc: "Members, teams & org chart" },
 ];
 
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
   const headers = { cookie: `access_token=${tokenCookie.value}` };
 
-  const goalsRes = await fetch(`${base}/goals`, { headers, cache: "no-store" });
+  const goalsRes = await fetch(`${base}/goals?type=OBJECTIVE`, { headers, cache: "no-store" });
   const goals = goalsRes.ok ? await goalsRes.json() : [];
   const goalCount: number = Array.isArray(goals) ? goals.length : (goals?.items?.length ?? 0);
 
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-4xl font-bold text-[#fafafa]">{goalCount}</p>
-                <p className="text-sm text-[#71717a] mt-0.5">Active Goals</p>
+                <p className="text-sm text-[#71717a] mt-0.5">Objectives</p>
               </div>
               <div className="flex items-center gap-1 text-xs text-[#818cf8] mt-auto">
                 <span>View all goals</span>

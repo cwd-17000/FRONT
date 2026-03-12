@@ -72,10 +72,10 @@ export function NewRitualForm({
 
     if (res.ok) {
       const created = await res.json();
-      router.push(`/dashboard/rituals/${created.id}`);
+      router.push(`/dashboard/cadence/${created.id}`);
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.message ?? "Failed to create ritual. Please try again.");
+      setError(data.message ?? "Failed to create cadence. Please try again.");
       setSaving(false);
     }
   }
@@ -115,7 +115,7 @@ export function NewRitualForm({
       )}
 
       <div>
-        <label style={labelStyle}>Ritual name *</label>
+        <label style={labelStyle}>Cadence name *</label>
         <input
           required
           placeholder="e.g. Weekly growth review"
@@ -257,11 +257,11 @@ export function NewRitualForm({
             opacity: saving ? 0.6 : 1,
           }}
         >
-          {saving ? "Scheduling…" : "Schedule ritual"}
+          {saving ? "Scheduling…" : "Schedule cadence"}
         </button>
         <button
           type="button"
-          onClick={() => router.push("/dashboard/rituals")}
+          onClick={() => router.push("/dashboard/cadence")}
           style={{
             padding: "10px 20px",
             background: "#fff",

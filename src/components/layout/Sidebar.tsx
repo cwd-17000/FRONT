@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { label: "Goals",           href: "/dashboard/goals",         icon: Target },
   { label: "Calendar",        href: "/dashboard/calendar",      icon: Calendar },
   { label: "Process Flows",   href: "/dashboard/process-flows", icon: GitBranch },
-  { label: "Rituals",         href: "/dashboard/rituals",       icon: RefreshCw },
+  { label: "Cadence",         href: "/dashboard/cadence",       icon: RefreshCw },
   { label: "My Organization", href: "/dashboard/my-organization", icon: Building2 },
 ];
 

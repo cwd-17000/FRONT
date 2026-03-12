@@ -39,7 +39,7 @@ export default async function NewRitualPage({
 
   return (
     <div style={{ padding: "32px 40px", maxWidth: 640, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Schedule a Ritual</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Schedule a Cadence</h1>
       <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 28 }}>
         Set up a recurring meeting or check-in for your team.
       </p>
