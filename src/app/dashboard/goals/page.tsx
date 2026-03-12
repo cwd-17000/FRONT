@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import GoalsList from "./GoalsList";
+import { Button } from "@/components/ui/button";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -28,7 +30,6 @@ export default async function GoalsPage() {
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/goals`;
 
   const [goalsRes, dashRes] = await Promise.all([
-    // fetch all goals (Objectives + Key Results) in one request
     fetch(`${base}?limit=100`, { headers, cache: "no-store" }),
     fetch(`${base}/dashboard`, { headers, cache: "no-store" }),
   ]);
@@ -38,47 +39,24 @@ export default async function GoalsPage() {
   const dashboard = dashRes.ok ? await dashRes.json() : null;
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 900, margin: "0 auto" }}>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Page header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 28,
-        }}
-      >
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Goals</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>
+          <h1 className="text-2xl font-bold text-[#fafafa]">Goals</h1>
+          <p className="mt-1 text-sm text-[#71717a]">
             Drive culture and revenue growth across your organization
           </p>
         </div>
         <Link href="/dashboard/goals/new">
-          <button
-            style={{
-              padding: "10px 20px",
-              background: "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            + New Goal
-          </button>
+          <Button className="gap-1.5 shrink-0">
+            <Plus size={15} />
+            New Goal
+          </Button>
         </Link>
       </div>
 
       <GoalsList goals={goals} dashboard={dashboard} />
-
-      <div style={{ marginTop: 32 }}>
-        <Link href="/dashboard" style={{ fontSize: 14, color: "#6b7280" }}>
-          ← Back to Dashboard
-        </Link>
-      </div>
     </div>
   );
 }

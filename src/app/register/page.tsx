@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Zap, ArrowRight, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -31,7 +35,6 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        // ← new users always go to onboarding
         router.push("/dashboard");
         return;
       }
@@ -46,41 +49,76 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Create Account</h1>
-      <form onSubmit={handleRegister}>
-        <input
-          placeholder="Email"
-          value={email}
-          type="email"
-          autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <br /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          autoComplete="new-password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <br /><br />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          autoComplete="new-password"
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-        <br /><br />
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Register"}
-        </button>
-        {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}
-      </form>
-      <p style={{ marginTop: 16 }}>
-        Already have an account? <a href="/login">Log in</a>
-      </p>
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#6366f1] mb-4">
+            <Zap size={20} className="text-white" />
+          </div>
+          <h1 className="text-xl font-bold text-[#fafafa]">Marketing OS</h1>
+          <p className="text-sm text-[#71717a] mt-1">Create your account</p>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-xl border border-[#27272a] bg-[#18181b] p-6 shadow-[0_8px_32px_0_rgb(0,0,0,0.4)]">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Input
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              autoComplete="new-password"
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <Input
+              label="Confirm password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              autoComplete="new-password"
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/10 px-3 py-2.5">
+                <AlertCircle size={14} className="text-[#ef4444] mt-0.5 shrink-0" />
+                <p className="text-sm text-[#ef4444]">{error}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full gap-1.5"
+            >
+              {isSubmitting ? "Creating account…" : "Create account"}
+              {!isSubmitting && <ArrowRight size={14} />}
+            </Button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-[#71717a] mt-5">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="text-[#818cf8] hover:text-[#6366f1] transition-colors duration-150"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

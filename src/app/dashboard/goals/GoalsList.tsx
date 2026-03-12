@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ChevronRight, Plus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface CheckIn {
   statusColor: string;
@@ -38,42 +43,44 @@ interface Props {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  FINANCIAL: "#10b981",
-  CUSTOMER: "#3b82f6",
+  FINANCIAL:        "#22c55e",
+  CUSTOMER:         "#3b82f6",
   INTERNAL_PROCESS: "#8b5cf6",
-  LEARNING_GROWTH: "#f59e0b",
-  CULTURE: "#ec4899",
+  LEARNING_GROWTH:  "#f59e0b",
+  CULTURE:          "#ec4899",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  FINANCIAL: "Financial",
-  CUSTOMER: "Customer",
+  FINANCIAL:        "Financial",
+  CUSTOMER:         "Customer",
   INTERNAL_PROCESS: "Internal Process",
-  LEARNING_GROWTH: "Learning & Growth",
-  CULTURE: "Culture",
+  LEARNING_GROWTH:  "Learning & Growth",
+  CULTURE:          "Culture",
 };
 
 const TIMEFRAME_LABELS: Record<string, string> = {
-  ANNUAL: "Annual",
+  ANNUAL:    "Annual",
   QUARTERLY: "Quarterly",
-  MONTHLY: "Monthly",
-  WEEKLY: "Weekly",
+  MONTHLY:   "Monthly",
+  WEEKLY:    "Weekly",
 };
 
-function confidenceColor(score: number) {
+function confidenceColor(score: number): string {
   if (score < 40) return "#ef4444";
   if (score <= 70) return "#f59e0b";
-  return "#10b981";
+  return "#22c55e";
 }
 
-function ragDotColor(c: string) {
-  if (c === "GREEN") return "#10b981";
+function ragDotColor(c: string): string {
+  if (c === "GREEN")  return "#22c55e";
   if (c === "YELLOW") return "#f59e0b";
   return "#ef4444";
 }
 
 function daysSince(iso: string) {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(
+    (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24)
+  );
 }
 
 function KRRow({ kr }: { kr: Goal }) {
@@ -82,64 +89,61 @@ function KRRow({ kr }: { kr: Goal }) {
       ? Math.min(100, Math.round((kr.currentValue / kr.targetValue) * 100))
       : null;
   const lastRag = kr.checkIns[0]?.statusColor;
-  const daysSinceCheckIn = kr.checkIns[0] ? daysSince(kr.checkIns[0].createdAt) : null;
-  const isDue = kr.status === "ACTIVE" && (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
+  const daysSinceCheckIn = kr.checkIns[0]
+    ? daysSince(kr.checkIns[0].createdAt)
+    : null;
+  const isDue =
+    kr.status === "ACTIVE" &&
+    (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
 
   return (
-    <Link href={`/dashboard/goals/${kr.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "10px 16px 10px 20px",
-          borderTop: "1px solid #f3f4f6",
-          background: "#fafafa",
-          cursor: "pointer",
-        }}
-      >
+    <Link
+      href={`/dashboard/goals/${kr.id}`}
+      className="block"
+    >
+      <div className="flex items-center gap-3 px-5 py-3 border-t border-[#1f1f1f] bg-[#0f0f10] hover:bg-[#18181b] transition-colors duration-150 cursor-pointer">
         {/* Indent line */}
-        <div style={{ width: 2, alignSelf: "stretch", background: "#e5e7eb", borderRadius: 1, flexShrink: 0 }} />
+        <div className="w-0.5 self-stretch bg-[#27272a] rounded-full shrink-0 ml-2" />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: progress !== null ? 5 : 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{kr.title}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-medium text-[#fafafa] truncate">
+              {kr.title}
+            </span>
             {isDue && (
-              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 99, background: "#fef3c7", color: "#d97706", flexShrink: 0 }}>
+              <Badge variant="warning" className="shrink-0 text-[10px]">
                 Check in
-              </span>
+              </Badge>
             )}
           </div>
           {progress !== null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ flex: 1, height: 4, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${progress}%`,
-                    background: confidenceColor(kr.confidenceScore),
-                    borderRadius: 99,
-                  }}
-                />
-              </div>
-              <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>
-                {kr.currentValue}{kr.unit ? ` ${kr.unit}` : ""} / {kr.targetValue}{kr.unit ? ` ${kr.unit}` : ""}
+            <div className="flex items-center gap-2">
+              <Progress value={progress} color={confidenceColor(kr.confidenceScore)} size="xs" className="flex-1" />
+              <span className="text-[11px] text-[#71717a] shrink-0">
+                {kr.currentValue}
+                {kr.unit ? ` ${kr.unit}` : ""} /{" "}
+                {kr.targetValue}
+                {kr.unit ? ` ${kr.unit}` : ""}
               </span>
             </div>
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div className="flex items-center gap-2 shrink-0">
           {lastRag && (
             <div
-              style={{ width: 8, height: 8, borderRadius: "50%", background: ragDotColor(lastRag) }}
+              className="w-2 h-2 rounded-full"
+              style={{ background: ragDotColor(lastRag) }}
               title={lastRag}
             />
           )}
-          <span style={{ fontSize: 13, fontWeight: 700, color: confidenceColor(kr.confidenceScore) }}>
+          <span
+            className="text-sm font-bold"
+            style={{ color: confidenceColor(kr.confidenceScore) }}
+          >
             {kr.confidenceScore}%
           </span>
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+          <span className="text-[11px] text-[#71717a]">
             {kr.owner.firstName} {kr.owner.lastName}
           </span>
         </div>
@@ -148,126 +152,127 @@ function KRRow({ kr }: { kr: Goal }) {
   );
 }
 
-function ObjectiveCard({ objective, keyResults }: { objective: Goal; keyResults: Goal[] }) {
+function ObjectiveCard({
+  objective,
+  keyResults,
+}: {
+  objective: Goal;
+  keyResults: Goal[];
+}) {
   const [expanded, setExpanded] = useState(false);
 
-  // Objective health = average confidence of its KRs (or own score if no KRs)
   const health =
     keyResults.length > 0
-      ? Math.round(keyResults.reduce((s, kr) => s + kr.confidenceScore, 0) / keyResults.length)
+      ? Math.round(
+          keyResults.reduce((s, kr) => s + kr.confidenceScore, 0) /
+            keyResults.length
+        )
       : objective.confidenceScore;
 
-  const lastRag = keyResults.length > 0
-    ? keyResults[0].checkIns[0]?.statusColor
-    : objective.checkIns[0]?.statusColor;
+  const lastRag =
+    keyResults.length > 0
+      ? keyResults[0].checkIns[0]?.statusColor
+      : objective.checkIns[0]?.statusColor;
 
-  // Overall KR progress
-  const krsWithTarget = keyResults.filter((kr) => kr.targetValue && kr.targetValue > 0);
+  const krsWithTarget = keyResults.filter(
+    (kr) => kr.targetValue && kr.targetValue > 0
+  );
   const avgKrProgress =
     krsWithTarget.length > 0
       ? Math.round(
-          krsWithTarget.reduce((s, kr) => s + Math.min(100, (kr.currentValue / kr.targetValue!) * 100), 0) /
-            krsWithTarget.length
+          krsWithTarget.reduce(
+            (s, kr) =>
+              s + Math.min(100, (kr.currentValue / kr.targetValue!) * 100),
+            0
+          ) / krsWithTarget.length
         )
       : null;
 
+  const catColor = CATEGORY_COLORS[objective.category] ?? "#71717a";
+
   return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-      {/* Objective header row */}
+    <Card className="overflow-hidden">
+      {/* Objective header */}
       <div
-        style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+        className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#1f1f1f] transition-colors duration-150"
         onClick={() => setExpanded((v) => !v)}
       >
-        {/* Chevron */}
-        <span
-          style={{
-            fontSize: 12,
-            color: "#9ca3af",
-            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-            transition: "transform 0.15s",
-            flexShrink: 0,
-            userSelect: "none",
-          }}
-        >
-          ▶
-        </span>
+        <ChevronRight
+          size={14}
+          className="shrink-0 text-[#71717a] transition-transform duration-150"
+          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
 
-        {/* Title + badges */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+        {/* Left: title + meta */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "2px 7px",
-                borderRadius: 99,
-                background: (CATEGORY_COLORS[objective.category] ?? "#6b7280") + "20",
-                color: CATEGORY_COLORS[objective.category] ?? "#6b7280",
+                background: catColor + "18",
+                color: catColor,
               }}
             >
               {CATEGORY_LABELS[objective.category] ?? objective.category}
             </span>
-            <span style={{ fontSize: 11, color: "#9ca3af" }}>
+            <span className="text-[11px] text-[#71717a]">
               {TIMEFRAME_LABELS[objective.timeframe] ?? objective.timeframe}
             </span>
           </div>
           <Link
             href={`/dashboard/goals/${objective.id}`}
-            style={{ textDecoration: "none" }}
+            className="text-sm font-semibold text-[#fafafa] hover:text-[#818cf8] transition-colors duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{objective.title}</span>
+            {objective.title}
           </Link>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+          <div className="text-xs text-[#71717a] mt-0.5">
             {objective.owner.firstName} {objective.owner.lastName}
-            {keyResults.length > 0 && ` · ${keyResults.length} key result${keyResults.length !== 1 ? "s" : ""}`}
+            {keyResults.length > 0 &&
+              ` · ${keyResults.length} key result${keyResults.length !== 1 ? "s" : ""}`}
           </div>
         </div>
 
-        {/* Health indicators */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        {/* Right: health indicators */}
+        <div className="flex items-center gap-3 shrink-0">
           {avgKrProgress !== null && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 2 }}>Avg progress</div>
-              <div style={{ width: 64, height: 5, background: "#f3f4f6", borderRadius: 99, overflow: "hidden" }}>
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${avgKrProgress}%`,
-                    background: confidenceColor(health),
-                    borderRadius: 99,
-                  }}
-                />
-              </div>
+            <div className="hidden sm:flex flex-col items-end gap-1">
+              <span className="text-[11px] text-[#71717a]">Avg progress</span>
+              <Progress
+                value={avgKrProgress}
+                color={confidenceColor(health)}
+                size="xs"
+                className="w-16"
+              />
             </div>
           )}
           {lastRag && (
             <div
-              style={{ width: 10, height: 10, borderRadius: "50%", background: ragDotColor(lastRag) }}
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ background: ragDotColor(lastRag) }}
               title={`Latest: ${lastRag}`}
             />
           )}
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: confidenceColor(health) }}>{health}%</div>
-            <div style={{ fontSize: 10, color: "#9ca3af" }}>confidence</div>
+          <div className="text-right">
+            <div
+              className="text-base font-bold"
+              style={{ color: confidenceColor(health) }}
+            >
+              {health}%
+            </div>
+            <div className="text-[10px] text-[#71717a]">confidence</div>
           </div>
         </div>
       </div>
 
-      {/* Collapsed KR count hint */}
+      {/* Collapsed hint */}
       {!expanded && keyResults.length > 0 && (
         <div
-          style={{
-            borderTop: "1px solid #f3f4f6",
-            padding: "6px 20px 6px 36px",
-            fontSize: 12,
-            color: "#9ca3af",
-            background: "#fafafa",
-            cursor: "pointer",
-          }}
+          className="border-t border-[#1f1f1f] px-5 py-2 text-xs text-[#71717a] bg-[#0f0f10] cursor-pointer hover:bg-[#18181b] transition-colors duration-150"
           onClick={() => setExpanded(true)}
         >
-          {keyResults.length} key result{keyResults.length !== 1 ? "s" : ""} — click to expand
+          {keyResults.length} key result
+          {keyResults.length !== 1 ? "s" : ""} — click to expand
         </div>
       )}
 
@@ -282,14 +287,17 @@ function ObjectiveCard({ objective, keyResults }: { objective: Goal; keyResults:
 
       {/* No KRs yet */}
       {expanded && keyResults.length === 0 && (
-        <div style={{ borderTop: "1px solid #f3f4f6", padding: "10px 20px 10px 36px", fontSize: 13, color: "#9ca3af", background: "#fafafa" }}>
+        <div className="border-t border-[#1f1f1f] px-5 py-3 text-sm text-[#71717a] bg-[#0f0f10]">
           No Key Results yet.{" "}
-          <Link href={`/dashboard/goals/new`} style={{ color: "#3b82f6", textDecoration: "none" }}>
+          <Link
+            href="/dashboard/goals/new"
+            className="text-[#818cf8] hover:text-[#6366f1] transition-colors duration-150"
+          >
             Add one →
           </Link>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -305,84 +313,74 @@ export default function GoalsList({ goals, dashboard }: Props) {
     });
 
   const ragTotal = dashboard
-    ? dashboard.ragCounts.RED + dashboard.ragCounts.YELLOW + dashboard.ragCounts.GREEN
+    ? dashboard.ragCounts.RED +
+      dashboard.ragCounts.YELLOW +
+      dashboard.ragCounts.GREEN
     : 0;
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Org health stats */}
       {dashboard && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 14,
-            marginBottom: 28,
-          }}
-        >
-          <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 18px" }}>
-            <div style={{ fontSize: 26, fontWeight: 700 }}>{dashboard.activeGoals}</div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>Active Objectives</div>
-          </div>
-          <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 18px" }}>
-            <div style={{ fontSize: 26, fontWeight: 700, color: confidenceColor(dashboard.avgConfidenceScore) }}>
-              {dashboard.avgConfidenceScore}%
-            </div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>Avg Confidence</div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-3xl font-bold text-[#fafafa]">
+                {dashboard.activeGoals}
+              </p>
+              <p className="text-sm text-[#71717a] mt-1">Active Objectives</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p
+                className="text-3xl font-bold"
+                style={{ color: confidenceColor(dashboard.avgConfidenceScore) }}
+              >
+                {dashboard.avgConfidenceScore}%
+              </p>
+              <p className="text-sm text-[#71717a] mt-1">Avg Confidence</p>
+            </CardContent>
+          </Card>
+
           {ragTotal > 0 && (
-            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 18px" }}>
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                {[
-                  { label: "On Track", count: dashboard.ragCounts.GREEN, color: "#10b981" },
-                  { label: "At Risk", count: dashboard.ragCounts.YELLOW, color: "#f59e0b" },
-                  { label: "Off Track", count: dashboard.ragCounts.RED, color: "#ef4444" },
-                ].map(({ label, count, color }) => (
-                  <div key={label} style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color }}>{count}</div>
-                    <div style={{ fontSize: 10, color: "#6b7280" }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>Last 30 days</div>
-            </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  {[
+                    { label: "On Track", count: dashboard.ragCounts.GREEN,  color: "#22c55e" },
+                    { label: "At Risk",  count: dashboard.ragCounts.YELLOW, color: "#f59e0b" },
+                    { label: "Off Track", count: dashboard.ragCounts.RED,   color: "#ef4444" },
+                  ].map(({ label, count, color }) => (
+                    <div key={label} className="text-center">
+                      <div className="text-xl font-bold" style={{ color }}>{count}</div>
+                      <div className="text-[10px] text-[#71717a] mt-0.5">{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-[#71717a] mt-2">Last 30 days</p>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
 
       {/* Objective list */}
       {objectives.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 0",
-            color: "#6b7280",
-            border: "2px dashed #e5e7eb",
-            borderRadius: 12,
-          }}
-        >
-          <p style={{ fontSize: 16, marginBottom: 16 }}>
+        <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-[#27272a] rounded-xl text-center">
+          <p className="text-[#71717a] mb-4">
             No objectives yet. Create your first to drive alignment.
           </p>
           <Link href="/dashboard/goals/new">
-            <button
-              style={{
-                padding: "10px 24px",
-                background: "#111827",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            <Button>
+              <Plus size={15} />
               Create Your First Objective
-            </button>
+            </Button>
           </Link>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {objectives.map((obj) => (
             <ObjectiveCard
               key={obj.id}

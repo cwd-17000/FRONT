@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
+/* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --bg:              #09090b;   /* zinc-950 */
+  --surface:         #18181b;   /* zinc-900 */
+  --surface-2:       #27272a;   /* zinc-800 */
+  --surface-3:       #3f3f46;   /* zinc-700 */
+
+  /* Borders */
+  --border:          #27272a;
+  --border-strong:   #3f3f46;
+
+  /* Accent */
+  --accent:          #6366f1;   /* indigo-500 */
+  --accent-hover:    #818cf8;   /* indigo-400 */
+  --accent-muted:    #312e81;   /* indigo-900 */
+
+  /* Text */
+  --text-1:          #fafafa;   /* zinc-50 */
+  --text-2:          #a1a1aa;   /* zinc-400 */
+  --text-3:          #71717a;   /* zinc-500 */
+
+  /* Status */
+  --success:         #22c55e;   /* green-500 */
+  --warning:         #f59e0b;   /* amber-500 */
+  --danger:          #ef4444;   /* red-500 */
+  --info:            #3b82f6;   /* blue-500 */
 }
 
+/* ── Tailwind v4 theme ────────────────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Map CSS vars → Tailwind color utilities */
+  --color-background:     var(--bg);
+  --color-surface:        var(--surface);
+  --color-surface-2:      var(--surface-2);
+  --color-surface-3:      var(--surface-3);
+  --color-border:         var(--border);
+  --color-border-strong:  var(--border-strong);
+  --color-accent:         var(--accent);
+  --color-accent-hover:   var(--accent-hover);
+  --color-accent-muted:   var(--accent-muted);
+  --color-text-1:         var(--text-1);
+  --color-text-2:         var(--text-2);
+  --color-text-3:         var(--text-3);
+  --color-success:        var(--success);
+  --color-warning:        var(--warning);
+  --color-danger:         var(--danger);
+  --color-info:           var(--info);
+
+  /* Fonts */
+  --font-sans:  var(--font-geist-sans);
+  --font-mono:  var(--font-geist-mono);
+
+  /* Custom shadow */
+  --shadow-card:  0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
 }

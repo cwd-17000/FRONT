@@ -1,5 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { Building2, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Org {
   id: string;
@@ -26,34 +28,38 @@ export default function OrgSwitcher({
     });
 
     if (res.ok) {
-      router.refresh(); // re-render server components with new JWT context
+      router.refresh();
     }
   }
 
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
 
   return (
-    <div>
-      <p>
-        Active: <strong>{activeOrg?.name ?? "Unknown"}</strong>
-      </p>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <Building2 size={14} className="text-[#71717a]" />
+        <span className="text-sm text-[#a1a1aa]">
+          Active:{" "}
+          <span className="font-semibold text-[#fafafa]">
+            {activeOrg?.name ?? "Unknown"}
+          </span>
+        </span>
+      </div>
 
       {orgs.length > 1 && (
-        <div style={{ marginTop: 12 }}>
-          <p style={{ color: "#666", fontSize: 14 }}>Switch organization:</p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {orgs
-              .filter((o) => o.id !== activeOrgId)
-              .map((org) => (
-                <button
-                  key={org.id}
-                  onClick={() => handleSwitch(org.id)}
-                  style={{ padding: "6px 16px" }}
-                >
-                  {org.name}
-                </button>
-              ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {orgs.map((org) => (
+            <Button
+              key={org.id}
+              variant={org.id === activeOrgId ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => handleSwitch(org.id)}
+              className="gap-1.5"
+            >
+              {org.id === activeOrgId && <Check size={12} />}
+              {org.name}
+            </Button>
+          ))}
         </div>
       )}
     </div>
