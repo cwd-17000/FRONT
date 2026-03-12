@@ -27,7 +27,13 @@ interface CadenceItem {
   name: string;
   recurrence: string;
   nextOccurrence?: string;
-  goal?: { id: string; title: string };
+  goal?: {
+    id: string;
+    title: string;
+    type?: "OBJECTIVE" | "KEY_RESULT";
+    dueDate?: string;
+    parentGoal?: { id: string; title: string; dueDate?: string };
+  };
 }
 
 interface CalendarDisplayItem {
@@ -50,14 +56,28 @@ function addMonths(date: Date, months: number) {
   return next;
 }
 
+function cadenceEndDate(cadence: CadenceItem) {
+  const linkedObjectiveDue = cadence.goal?.type === "KEY_RESULT"
+    ? cadence.goal.parentGoal?.dueDate
+    : cadence.goal?.dueDate;
+
+  if (!linkedObjectiveDue) return null;
+  const due = new Date(linkedObjectiveDue);
+  return Number.isNaN(due.getTime()) ? null : due;
+}
+
 function expandCadenceOccurrences(cadence: CadenceItem, year: number, month: number): string[] {
   if (!cadence.nextOccurrence) return [];
 
   const seed = new Date(cadence.nextOccurrence);
   if (Number.isNaN(seed.getTime())) return [];
+  const endDate = cadenceEndDate(cadence);
 
   const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
   const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  const rangeEnd = endDate && endDate < monthEnd ? endDate : monthEnd;
+
+  if (seed > rangeEnd) return [];
   const dates: string[] = [];
 
   const pushIfInRange = (date: Date) => {
@@ -69,28 +89,16 @@ function expandCadenceOccurrences(cadence: CadenceItem, year: number, month: num
   if (cadence.recurrence === "WEEKLY" || cadence.recurrence === "BIWEEKLY") {
     const intervalDays = cadence.recurrence === "WEEKLY" ? 7 : 14;
 
-    let backward = new Date(seed);
-    while (backward >= monthStart) {
-      pushIfInRange(backward);
-      backward = addDays(backward, -intervalDays);
-    }
-
-    let forward = addDays(seed, intervalDays);
-    while (forward <= monthEnd) {
+    let forward = new Date(seed);
+    while (forward <= rangeEnd) {
       pushIfInRange(forward);
       forward = addDays(forward, intervalDays);
     }
   } else if (cadence.recurrence === "MONTHLY" || cadence.recurrence === "QUARTERLY") {
     const intervalMonths = cadence.recurrence === "MONTHLY" ? 1 : 3;
 
-    let backward = new Date(seed);
-    while (backward >= monthStart) {
-      pushIfInRange(backward);
-      backward = addMonths(backward, -intervalMonths);
-    }
-
-    let forward = addMonths(seed, intervalMonths);
-    while (forward <= monthEnd) {
+    let forward = new Date(seed);
+    while (forward <= rangeEnd) {
       pushIfInRange(forward);
       forward = addMonths(forward, intervalMonths);
     }

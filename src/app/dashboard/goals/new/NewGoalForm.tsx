@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type GoalTimeframe = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
+type GoalCategory = "FINANCIAL" | "CUSTOMER" | "INTERNAL_PROCESS" | "LEARNING_GROWTH" | "CULTURE";
 
 interface Member {
   userId: string;
@@ -25,6 +26,14 @@ const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
   { value: "WEEKLY", label: "Weekly" },
 ];
 
+const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
+  { value: "FINANCIAL", label: "Financial" },
+  { value: "CUSTOMER", label: "Customer" },
+  { value: "INTERNAL_PROCESS", label: "Internal Process" },
+  { value: "LEARNING_GROWTH", label: "Learning & Growth" },
+  { value: "CULTURE", label: "Culture" },
+];
+
 const selectClass =
   "w-full h-10 rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
@@ -35,6 +44,7 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
 
   const [title, setTitle] = useState("");
   const [timeframe, setTimeframe] = useState<GoalTimeframe | "">("");
+  const [category, setCategory] = useState<GoalCategory>("FINANCIAL");
   const [ownerId, setOwnerId] = useState("");
 
   const canSubmit = title.trim().length > 0 && timeframe !== "";
@@ -49,6 +59,7 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
       const body: Record<string, unknown> = {
         title: title.trim(),
         type: "OBJECTIVE",
+        category,
         timeframe,
         status: "ACTIVE",
       };
@@ -117,6 +128,21 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as GoalCategory)}
+              className={selectClass}
+            >
+              {CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Owner */}

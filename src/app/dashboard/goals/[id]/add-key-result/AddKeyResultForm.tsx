@@ -15,6 +15,7 @@ interface Props {
   activeOrgId: string;
   parentGoalId: string;
   parentGoalTitle: string;
+  parentGoalTimeframe: "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
   members: Member[];
 }
 
@@ -25,6 +26,7 @@ export default function AddKeyResultForm({
   activeOrgId,
   parentGoalId,
   parentGoalTitle,
+  parentGoalTimeframe,
   members,
 }: Props) {
   const router = useRouter();
@@ -49,7 +51,7 @@ export default function AddKeyResultForm({
       const body: Record<string, unknown> = {
         title: title.trim(),
         type: "KEY_RESULT",
-        timeframe: "QUARTERLY", // inherits from parent; backend can validate
+        timeframe: parentGoalTimeframe,
         status: "ACTIVE",
         parentGoalId,
         targetValue: parseFloat(targetValue),

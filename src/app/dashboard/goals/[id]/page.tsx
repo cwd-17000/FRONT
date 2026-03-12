@@ -120,6 +120,21 @@ function formatDate(iso?: string) {
   });
 }
 
+function dueDateFromTimeframe(timeframe?: string) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  if (timeframe === "ANNUAL") return new Date(year, 11, 31, 23, 59, 59, 999);
+  if (timeframe === "QUARTERLY") {
+    const quarterEndMonth = Math.floor(month / 3) * 3 + 2;
+    return new Date(year, quarterEndMonth + 1, 0, 23, 59, 59, 999);
+  }
+  if (timeframe === "MONTHLY") return new Date(year, month + 1, 0, 23, 59, 59, 999);
+  if (timeframe === "WEEKLY") return new Date(year, month, now.getDate(), 23, 59, 59, 999);
+  return undefined;
+}
+
 function ProgressChart({ checkIns, unit }: { checkIns: CheckIn[]; unit?: string }) {
   if (checkIns.length < 2) return null;
   const sorted = [...checkIns].reverse();
@@ -190,6 +205,7 @@ export default async function GoalDetailPage({
     goal.targetValue && goal.targetValue > 0
       ? Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100))
       : 0;
+  const effectiveDueDate = goal.dueDate ?? dueDateFromTimeframe(goal.timeframe)?.toISOString();
 
   const isObjective = goal.type === "OBJECTIVE";
   const isKeyResult = goal.type === "KEY_RESULT";
@@ -403,7 +419,7 @@ export default async function GoalDetailPage({
             <Card>
               <CardContent className="p-4">
                 <p className="text-xs text-[#71717a] mb-1">Due</p>
-                <p className="text-sm font-semibold text-[#fafafa]">{formatDate(goal.dueDate)}</p>
+                <p className="text-sm font-semibold text-[#fafafa]">{formatDate(effectiveDueDate)}</p>
               </CardContent>
             </Card>
           </div>

@@ -59,6 +59,7 @@ export default async function AddKeyResultPage({
       activeOrgId={user.activeOrgId}
       parentGoalId={id}
       parentGoalTitle={goal.title}
+      parentGoalTimeframe={goal.timeframe}
       members={members}
     />
   );
