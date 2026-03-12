@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import OrgSwitcher from "./OrgSwitcher";
+import { MilestoneStatusActions } from "@/components/goals/MilestoneStatusActions";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -45,6 +46,53 @@ const QUICK_LINKS = [
   { label: "My Organization",href: "/dashboard/my-organization", icon: Building2,  desc: "Members, teams & org chart" },
 ];
 
+interface GoalSummary {
+  id: string;
+  title: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
+  goalId: string;
+  goalTitle: string;
+}
+
+interface Cadence {
+  id: string;
+  name: string;
+  nextOccurrence?: string;
+  goal?: { id: string; title: string };
+}
+
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === "object" && Array.isArray((value as { items?: unknown[] }).items)) {
+    return (value as { items: T[] }).items;
+  }
+  return [];
+}
+
+function formatDateTime(iso?: string) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const tokenCookie = cookieStore.get("access_token");
@@ -61,8 +109,61 @@ export default async function DashboardPage() {
   const headers = { cookie: `access_token=${tokenCookie.value}` };
 
   const goalsRes = await fetch(`${base}/goals?type=OBJECTIVE`, { headers, cache: "no-store" });
-  const goals = goalsRes.ok ? await goalsRes.json() : [];
-  const goalCount: number = Array.isArray(goals) ? goals.length : (goals?.items?.length ?? 0);
+  const goals = goalsRes.ok ? asArray<GoalSummary>(await goalsRes.json()) : [];
+  const goalCount = goals.length;
+
+  const [cadenceRes, milestoneResponses] = await Promise.all([
+    fetch(`${base}/rituals`, { headers, cache: "no-store" }),
+    Promise.all(
+      goals.map((goal) =>
+        fetch(`${base}/goals/${goal.id}/milestones`, { headers, cache: "no-store" })
+      )
+    ),
+  ]);
+
+  const cadence: Cadence[] = cadenceRes.ok ? await cadenceRes.json() : [];
+
+  const milestonesByGoal = await Promise.all(
+    milestoneResponses.map(async (response, index) => {
+      if (!response.ok) return [] as Milestone[];
+      const rows = (await response.json()) as Omit<Milestone, "goalId" | "goalTitle">[];
+      const goal = goals[index];
+      return rows.map((row) => ({
+        ...row,
+        goalId: goal.id,
+        goalTitle: goal.title,
+      }));
+    })
+  );
+
+  const milestones = milestonesByGoal.flat();
+
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const upcomingCadence = cadence
+    .filter((item) => item.nextOccurrence && new Date(item.nextOccurrence) >= now)
+    .sort((a, b) => new Date(a.nextOccurrence!).getTime() - new Date(b.nextOccurrence!).getTime())[0];
+
+  const upcomingMilestone = milestones
+    .filter((item) => item.status !== "COMPLETED" && item.status !== "MISSED" && new Date(item.dueDate) >= now)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+
+  const cadencePastWeek = cadence
+    .filter((item) => {
+      if (!item.nextOccurrence) return false;
+      const date = new Date(item.nextOccurrence);
+      return date >= weekAgo && date <= now;
+    })
+    .sort((a, b) => new Date(b.nextOccurrence!).getTime() - new Date(a.nextOccurrence!).getTime());
+
+  const milestonesPastWeek = milestones
+    .filter((item) => {
+      const due = new Date(item.dueDate);
+      return due >= weekAgo && due <= now;
+    })
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
@@ -128,7 +229,109 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Row 3: Organization switcher (only if multi-org) ─────── */}
+      {/* ── Row 3: Cadence + Milestone timeline ───────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-[#a1a1aa]">Next upcoming cadence</h2>
+            {upcomingCadence ? (
+              <div className="rounded-lg border border-[#27272a] bg-[#18181b] p-3 space-y-2">
+                <p className="text-sm font-medium text-[#fafafa]">{upcomingCadence.name}</p>
+                <p className="text-xs text-[#71717a]">
+                  {formatDateTime(upcomingCadence.nextOccurrence)}
+                  {upcomingCadence.goal ? ` · ${upcomingCadence.goal.title}` : ""}
+                </p>
+                <Link href={`/dashboard/cadence/${upcomingCadence.id}`} className="text-xs text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
+                  Open cadence and check in →
+                </Link>
+              </div>
+            ) : (
+              <p className="text-sm text-[#71717a]">No upcoming cadence scheduled.</p>
+            )}
+
+            <h2 className="text-sm font-semibold text-[#a1a1aa] pt-2">Next upcoming milestone</h2>
+            {upcomingMilestone ? (
+              <div className="rounded-lg border border-[#27272a] bg-[#18181b] p-3 space-y-2">
+                <div>
+                  <p className="text-sm font-medium text-[#fafafa]">{upcomingMilestone.title}</p>
+                  <p className="text-xs text-[#71717a]">
+                    {formatDate(upcomingMilestone.dueDate)} · {upcomingMilestone.goalTitle}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <Link href={`/dashboard/goals/${upcomingMilestone.goalId}`} className="text-xs text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
+                    Open objective →
+                  </Link>
+                  <MilestoneStatusActions
+                    orgId={user.activeOrgId!}
+                    goalId={upcomingMilestone.goalId}
+                    milestoneId={upcomingMilestone.id}
+                    compact
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-[#71717a]">No upcoming milestones scheduled.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-[#a1a1aa]">Past week actions</h2>
+
+            <div className="space-y-2">
+              <p className="text-xs text-[#71717a] uppercase tracking-wider">Cadence</p>
+              {cadencePastWeek.length === 0 ? (
+                <p className="text-sm text-[#71717a]">No cadence in the past week.</p>
+              ) : (
+                cadencePastWeek.slice(0, 5).map((item) => (
+                  <div key={item.id} className="rounded-lg border border-[#27272a] bg-[#18181b] p-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#fafafa] truncate">{item.name}</p>
+                      <p className="text-xs text-[#71717a] truncate">{formatDateTime(item.nextOccurrence)}{item.goal ? ` · ${item.goal.title}` : ""}</p>
+                    </div>
+                    <Link href={`/dashboard/cadence/${item.id}`} className="text-xs text-[#818cf8] hover:text-[#a5b4fc] transition-colors shrink-0">
+                      Check in
+                    </Link>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-[#71717a] uppercase tracking-wider">Milestones</p>
+              {milestonesPastWeek.length === 0 ? (
+                <p className="text-sm text-[#71717a]">No milestones in the past week.</p>
+              ) : (
+                milestonesPastWeek.slice(0, 5).map((item) => (
+                  <div key={item.id} className="rounded-lg border border-[#27272a] bg-[#18181b] p-3 space-y-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#fafafa] truncate">{item.title}</p>
+                      <p className="text-xs text-[#71717a] truncate">{formatDate(item.dueDate)} · {item.goalTitle}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <Link href={`/dashboard/goals/${item.goalId}`} className="text-xs text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
+                        Open objective
+                      </Link>
+                      {(item.status === "PENDING" || item.status === "IN_PROGRESS") && (
+                        <MilestoneStatusActions
+                          orgId={user.activeOrgId!}
+                          goalId={item.goalId}
+                          milestoneId={item.id}
+                          compact
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Row 4: Organization switcher (only if multi-org) ─────── */}
       {orgs.length > 1 && (
         <div>
           <h2 className="text-xs font-semibold text-[#71717a] uppercase tracking-wider mb-4">

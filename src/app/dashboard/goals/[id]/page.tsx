@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { MilestonesPanel } from "./MilestonesPanel";
 import { RitualsPanel } from "./RitualsPanel";
 
 function decodeJwtPayload(token: string) {
@@ -65,6 +66,14 @@ interface Goal {
   checkIns: CheckIn[];
   comments: Comment[];
   _count: { checkIns: number; comments: number; childGoals: number };
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -198,8 +207,12 @@ export default async function GoalDetailPage({
   const goal: Goal = await goalRes.json();
 
   const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
-  const ritualsRes = await fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" });
+  const [ritualsRes, milestonesRes] = await Promise.all([
+    fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" }),
+    fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
+  ]);
   const rituals = ritualsRes.ok ? await ritualsRes.json() : [];
+  const milestones: Milestone[] = milestonesRes.ok ? await milestonesRes.json() : [];
 
   const progress =
     goal.targetValue && goal.targetValue > 0
@@ -298,16 +311,8 @@ export default async function GoalDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#71717a] mb-1">Parent objective</dt>
-                  <dd className="text-[#fafafa] font-medium">
-                    {goal.parentGoal ? (
-                      <Link href={`/dashboard/goals/${goal.parentGoal.id}`} className="text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
-                        {goal.parentGoal.title}
-                      </Link>
-                    ) : (
-                      "None"
-                    )}
-                  </dd>
+                  <dt className="text-[#71717a] mb-1">Due</dt>
+                  <dd className="text-[#fafafa] font-medium">{formatDate(effectiveDueDate)}</dd>
                 </div>
               </dl>
             </CardContent>
@@ -322,6 +327,9 @@ export default async function GoalDetailPage({
                     Add Key Results
                   </div>
                 </Link>
+                <a href="#milestones" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                  Add milestones
+                </a>
                 <a href="#cadence" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
                   Schedule cadence
                 </a>
@@ -377,6 +385,10 @@ export default async function GoalDetailPage({
                 ))}
               </div>
             )}
+          </div>
+
+          <div id="milestones" className="scroll-mt-24">
+            <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
           </div>
 
           <div id="cadence" className="scroll-mt-24">

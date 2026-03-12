@@ -2,8 +2,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CalendarActionItemCard, type CalendarDisplayItem } from "./CalendarActionItemCard";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -36,12 +37,18 @@ interface CadenceItem {
   };
 }
 
-interface CalendarDisplayItem {
+interface MilestoneItem {
   id: string;
   title: string;
-  startDate: string;
-  subtitle?: string;
-  kind: "EVENT" | "CADENCE";
+  dueDate: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
+  goalId: string;
+  goalTitle: string;
+}
+
+interface GoalSummary {
+  id: string;
+  title: string;
 }
 
 function addDays(date: Date, days: number) {
@@ -64,6 +71,32 @@ function cadenceEndDate(cadence: CadenceItem) {
   if (!linkedObjectiveDue) return null;
   const due = new Date(linkedObjectiveDue);
   return Number.isNaN(due.getTime()) ? null : due;
+}
+
+function parseGoals(value: unknown): GoalSummary[] {
+  if (Array.isArray(value)) return value as GoalSummary[];
+  if (value && typeof value === "object" && Array.isArray((value as { items?: unknown[] }).items)) {
+    return (value as { items: GoalSummary[] }).items;
+  }
+  return [];
+}
+
+function parseMonth(month?: string) {
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    const [yearText, monthText] = month.split("-");
+    const year = Number(yearText);
+    const monthIndex = Number(monthText) - 1;
+    if (!Number.isNaN(year) && monthIndex >= 0 && monthIndex <= 11) {
+      return { year, month: monthIndex };
+    }
+  }
+
+  const today = new Date();
+  return { year: today.getFullYear(), month: today.getMonth() };
+}
+
+function monthParam(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function expandCadenceOccurrences(cadence: CadenceItem, year: number, month: number): string[] {
@@ -115,7 +148,11 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ month?: string }>;
+}) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token");
   if (!token) redirect("/login");
@@ -123,8 +160,17 @@ export default async function CalendarPage() {
   const user = decodeJwtPayload(token.value);
   if (!user?.activeOrgId) redirect("/onboarding");
 
+  const params = searchParams ? await searchParams : undefined;
+  const parsed = parseMonth(params?.month);
+  const displayYear = parsed.year;
+  const displayMonth = parsed.month;
+  const prevMonth = new Date(displayYear, displayMonth - 1, 1);
+  const nextMonth = new Date(displayYear, displayMonth + 1, 1);
+
   const headers = { cookie: `access_token=${token.value}` };
-  const [calendarRes, cadenceRes] = await Promise.all([
+  const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
+
+  const [calendarRes, cadenceRes, goalsRes] = await Promise.all([
     fetch(`${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/calendar`, {
       headers,
       cache: "no-store",
@@ -133,14 +179,35 @@ export default async function CalendarPage() {
       headers,
       cache: "no-store",
     }),
+    fetch(`${base}/goals?type=OBJECTIVE&limit=100`, {
+      headers,
+      cache: "no-store",
+    }),
   ]);
 
   const events: CalendarEvent[] = calendarRes.ok ? await calendarRes.json() : [];
   const cadence: CadenceItem[] = cadenceRes.ok ? await cadenceRes.json() : [];
+  const goals = goalsRes.ok ? parseGoals(await goalsRes.json()) : [];
+
+  const milestoneResponses = await Promise.all(
+    goals.map((goal) => fetch(`${base}/goals/${goal.id}/milestones`, { headers, cache: "no-store" }))
+  );
+
+  const milestonesByGoal = await Promise.all(
+    milestoneResponses.map(async (response, index) => {
+      if (!response.ok) return [] as MilestoneItem[];
+      const rows = (await response.json()) as Omit<MilestoneItem, "goalId" | "goalTitle">[];
+      const goal = goals[index];
+      return rows.map((row) => ({
+        ...row,
+        goalId: goal.id,
+        goalTitle: goal.title,
+      }));
+    })
+  );
+  const milestones = milestonesByGoal.flat();
 
   const today = new Date();
-  const displayYear = today.getFullYear();
-  const displayMonth = today.getMonth();
 
   const cadenceItems: CalendarDisplayItem[] = cadence.flatMap((item) =>
     expandCadenceOccurrences(item, displayYear, displayMonth).map((occurrence, index) => ({
@@ -149,8 +216,25 @@ export default async function CalendarPage() {
       startDate: occurrence,
       subtitle: item.goal?.title,
       kind: "CADENCE" as const,
+      cadenceId: item.id,
     }))
   );
+
+  const milestoneItems: CalendarDisplayItem[] = milestones
+    .filter((item) => {
+      const due = new Date(item.dueDate);
+      return due.getFullYear() === displayYear && due.getMonth() === displayMonth;
+    })
+    .map((item) => ({
+      id: `milestone-${item.id}`,
+      title: item.title,
+      startDate: item.dueDate,
+      subtitle: item.goalTitle,
+      kind: "MILESTONE" as const,
+      goalId: item.goalId,
+      milestoneId: item.id,
+      milestoneStatus: item.status,
+    }));
 
   const items: CalendarDisplayItem[] = [
     ...events.map((event) => ({
@@ -161,6 +245,7 @@ export default async function CalendarPage() {
       kind: "EVENT" as const,
     })),
     ...cadenceItems,
+    ...milestoneItems,
   ];
 
   const eventsByDate: Record<string, CalendarDisplayItem[]> = {};
@@ -192,12 +277,24 @@ export default async function CalendarPage() {
           </h1>
           <p className="mt-1 text-sm text-[#71717a]">Team calendar and cadence</p>
         </div>
-        <Link href="/dashboard/calendar/new">
-          <Button className="gap-1.5">
-            <Plus size={15} />
-            New Event
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/calendar?month=${monthParam(prevMonth)}`}>
+            <Button variant="secondary" size="sm" className="gap-1.5">
+              <ChevronLeft size={14} /> Prev
+            </Button>
+          </Link>
+          <Link href={`/dashboard/calendar?month=${monthParam(nextMonth)}`}>
+            <Button variant="secondary" size="sm" className="gap-1.5">
+              Next <ChevronRight size={14} />
+            </Button>
+          </Link>
+          <Link href="/dashboard/calendar/new">
+            <Button className="gap-1.5">
+              <Plus size={15} />
+              New Event
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Day-name header */}
@@ -239,19 +336,9 @@ export default async function CalendarPage() {
                     {dayEvents.map((event) => (
                       <div
                         key={event.id}
-                        className={[
-                          "text-[10px] px-1.5 py-0.5 rounded border overflow-hidden",
-                          event.kind === "CADENCE"
-                            ? "bg-[#052e16] border-[#22c55e]/30"
-                            : "bg-[#312e81] border-[#6366f1]/20",
-                        ].join(" ")}
+                        className="overflow-hidden"
                       >
-                        <div className={event.kind === "CADENCE" ? "font-medium text-[#86efac] truncate" : "font-medium text-[#818cf8] truncate"}>
-                          {event.title}
-                        </div>
-                        {event.subtitle && (
-                          <div className="text-[#71717a] truncate">{event.subtitle}</div>
-                        )}
+                        <CalendarActionItemCard item={event} orgId={user.activeOrgId!} />
                       </div>
                     ))}
                   </div>
@@ -265,7 +352,7 @@ export default async function CalendarPage() {
       {items.length === 0 && (
         <div className="text-center py-10 border-2 border-dashed border-[#27272a] rounded-xl">
           <p className="text-sm text-[#71717a] mb-3">
-            No events or cadence this month. Create your first calendar event.
+            No events, milestones, or cadence this month.
           </p>
           <Link href="/dashboard/calendar/new">
             <Button className="gap-1.5"><Plus size={14} />Create Event</Button>
