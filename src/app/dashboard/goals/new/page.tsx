@@ -23,23 +23,17 @@ export default async function NewGoalPage() {
   const headers = { cookie: `access_token=${token.value}` };
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
 
-  const membersRes = await fetch(`${base}/members`, { headers, cache: "no-store" });
-
-  const rawMembers = membersRes.ok ? await membersRes.json() : [];
-  const members = (rawMembers as {
-    userId: string;
-    user: { id: string; firstName: string | null; lastName: string | null; email: string };
-  }[]).map((m) => ({
-    userId: m.userId,
-    name:
-      [m.user.firstName, m.user.lastName].filter(Boolean).join(" ") ||
-      m.user.email,
+  const teamsRes = await fetch(`${base}/teams`, { headers, cache: "no-store" });
+  const rawTeams = teamsRes.ok ? await teamsRes.json() : [];
+  const teams = (rawTeams as { id: string; name: string }[]).map((t) => ({
+    id: t.id,
+    name: t.name,
   }));
 
   return (
     <NewGoalForm
       activeOrgId={user.activeOrgId}
-      members={members}
+      teams={teams}
     />
   );
 }

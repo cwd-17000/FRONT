@@ -74,16 +74,20 @@ export default async function GoalsPage() {
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/goals`;
   const orgBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
 
-  const [goalsRes, dashRes, ritualsRes] = await Promise.all([
+  const [goalsRes, dashRes, ritualsRes, teamsRes] = await Promise.all([
     fetch(`${base}?limit=100`, { headers, cache: "no-store" }),
     fetch(`${base}/dashboard`, { headers, cache: "no-store" }),
     fetch(`${orgBase}/rituals`, { headers, cache: "no-store" }),
+    fetch(`${orgBase}/teams`, { headers, cache: "no-store" }),
   ]);
 
   const goalsData = goalsRes.ok ? await goalsRes.json() : { items: [] };
   const goals = goalsData.items ?? [];
   const dashboard = dashRes.ok ? await dashRes.json() : null;
   const rituals: RitualItem[] = ritualsRes.ok ? await ritualsRes.json() : [];
+  const teams: { id: string; name: string }[] = teamsRes.ok
+    ? (await teamsRes.json()).map((t: { id: string; name: string }) => ({ id: t.id, name: t.name }))
+    : [];
 
   // Fetch milestones for active objectives in parallel
   const activeObjectives: GoalItem[] = (goals as GoalItem[]).filter(
@@ -207,7 +211,7 @@ export default async function GoalsPage() {
         pastWeekCadences={pastWeekCadences}
       />
 
-      <GoalsList goals={goals} dashboard={dashboard} />
+      <GoalsList goals={goals} dashboard={dashboard} teams={teams} />
     </div>
   );
 }

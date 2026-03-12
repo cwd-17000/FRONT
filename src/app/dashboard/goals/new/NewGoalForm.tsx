@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 type GoalTimeframe = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
 type GoalCategory = "FINANCIAL" | "CUSTOMER" | "INTERNAL_PROCESS" | "LEARNING_GROWTH" | "CULTURE";
 
-interface Member {
-  userId: string;
+interface Team {
+  id: string;
   name: string;
 }
 
 interface Props {
   activeOrgId: string;
-  members: Member[];
+  teams: Team[];
 }
 
 const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
@@ -37,7 +37,7 @@ const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
 const selectClass =
   "w-full h-10 rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
-export default function NewGoalForm({ activeOrgId, members }: Props) {
+export default function NewGoalForm({ activeOrgId, teams }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
   const [title, setTitle] = useState("");
   const [timeframe, setTimeframe] = useState<GoalTimeframe | "">("");
   const [category, setCategory] = useState<GoalCategory>("FINANCIAL");
-  const [ownerId, setOwnerId] = useState("");
+  const [teamId, setTeamId] = useState("");
 
   const canSubmit = title.trim().length > 0 && timeframe !== "";
 
@@ -63,7 +63,7 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
         timeframe,
         status: "ACTIVE",
       };
-      if (ownerId) body.ownerId = ownerId;
+      if (teamId) body.teamId = teamId;
 
       const res = await fetch(`/api/organizations/${activeOrgId}/goals`, {
         method: "POST",
@@ -130,6 +130,7 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
             </div>
           </div>
 
+          {/* Category */}
           <div>
             <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Category</label>
             <select
@@ -145,25 +146,31 @@ export default function NewGoalForm({ activeOrgId, members }: Props) {
             </select>
           </div>
 
-          {/* Owner */}
-          {members.length > 0 && (
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Owner</label>
+          {/* Team */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Team</label>
+            {teams.length === 0 ? (
+              <p className="text-sm text-[#52525b]">
+                No teams yet.{" "}
+                <a href="/dashboard/my-organization" className="text-[#818cf8] hover:text-[#6366f1] transition-colors">
+                  Create a team first →
+                </a>
+              </p>
+            ) : (
               <select
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
                 className={selectClass}
               >
-                <option value="">— Assign to me —</option>
-                {members.map((m) => (
-                  <option key={m.userId} value={m.userId}>
-                    {m.name}
+                <option value="">— No team —</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
                   </option>
                 ))}
               </select>
-            </div>
-          )}
-
+            )}
+          </div>
         </div>
 
         {error && (
