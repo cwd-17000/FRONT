@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MilestonesPanel } from "./MilestonesPanel";
 import { RitualsPanel } from "./RitualsPanel";
 
 function decodeJwtPayload(token: string) {
@@ -184,14 +183,8 @@ export default async function GoalDetailPage({
   const goal: Goal = await goalRes.json();
 
   const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
-  const [milestonesRes, ritualsRes] = await Promise.all([
-    fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
-    fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" }),
-  ]);
-  const [milestones, rituals] = await Promise.all([
-    milestonesRes.ok ? milestonesRes.json() : [],
-    ritualsRes.ok ? ritualsRes.json() : [],
-  ]);
+  const ritualsRes = await fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" });
+  const rituals = ritualsRes.ok ? await ritualsRes.json() : [];
 
   const progress =
     goal.targetValue && goal.targetValue > 0
@@ -313,9 +306,6 @@ export default async function GoalDetailPage({
                     Add Key Results
                   </div>
                 </Link>
-                <a href="#milestones" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
-                  Add milestones
-                </a>
                 <a href="#cadence" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
                   Schedule cadence
                 </a>
@@ -344,7 +334,7 @@ export default async function GoalDetailPage({
                 {goal.childGoals.map((kr) => (
                   <Link key={kr.id} href={`/dashboard/goals/${kr.id}`}>
                     <Card hover>
-                      <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-6 gap-3 text-sm">
+                      <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-5 gap-3 text-sm">
                         <div className="sm:col-span-2 min-w-0">
                           <p className="text-xs text-[#71717a] mb-1">Title</p>
                           <p className="text-[#fafafa] font-medium truncate">{kr.title}</p>
@@ -352,10 +342,6 @@ export default async function GoalDetailPage({
                         <div>
                           <p className="text-xs text-[#71717a] mb-1">Metric</p>
                           <p className="text-[#fafafa]">{kr.description || kr.unit || "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-[#71717a] mb-1">Baseline</p>
-                          <p className="text-[#fafafa]">—</p>
                         </div>
                         <div>
                           <p className="text-xs text-[#71717a] mb-1">Target</p>
@@ -375,10 +361,6 @@ export default async function GoalDetailPage({
                 ))}
               </div>
             )}
-          </div>
-
-          <div id="milestones" className="scroll-mt-24">
-            <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
           </div>
 
           <div id="cadence" className="scroll-mt-24">

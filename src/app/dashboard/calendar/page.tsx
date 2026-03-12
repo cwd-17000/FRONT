@@ -22,6 +22,21 @@ interface CalendarEvent {
   initiativeName?: string;
 }
 
+interface CadenceItem {
+  id: string;
+  name: string;
+  nextOccurrence?: string;
+  goal?: { id: string; title: string };
+}
+
+interface CalendarDisplayItem {
+  id: string;
+  title: string;
+  startDate: string;
+  subtitle?: string;
+  kind: "EVENT" | "CADENCE";
+}
+
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -36,15 +51,42 @@ export default async function CalendarPage() {
   const user = decodeJwtPayload(token.value);
   if (!user?.activeOrgId) redirect("/onboarding");
 
-  const res = await fetch(
-    `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/calendar`,
-    { headers: { cookie: `access_token=${token.value}` }, cache: "no-store" }
-  );
+  const headers = { cookie: `access_token=${token.value}` };
+  const [calendarRes, cadenceRes] = await Promise.all([
+    fetch(`${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/calendar`, {
+      headers,
+      cache: "no-store",
+    }),
+    fetch(`${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/rituals`, {
+      headers,
+      cache: "no-store",
+    }),
+  ]);
 
-  const events: CalendarEvent[] = res.ok ? await res.json() : [];
+  const events: CalendarEvent[] = calendarRes.ok ? await calendarRes.json() : [];
+  const cadence: CadenceItem[] = cadenceRes.ok ? await cadenceRes.json() : [];
 
-  const eventsByDate: Record<string, CalendarEvent[]> = {};
-  for (const event of (events ?? [])) {
+  const items: CalendarDisplayItem[] = [
+    ...events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      startDate: event.startDate,
+      subtitle: event.initiativeName,
+      kind: "EVENT" as const,
+    })),
+    ...cadence
+      .filter((item) => !!item.nextOccurrence)
+      .map((item) => ({
+        id: `cadence-${item.id}`,
+        title: item.name,
+        startDate: item.nextOccurrence!,
+        subtitle: item.goal?.title,
+        kind: "CADENCE" as const,
+      })),
+  ];
+
+  const eventsByDate: Record<string, CalendarDisplayItem[]> = {};
+  for (const event of items) {
     const key = (event.startDate ?? "").slice(0, 10);
     if (!eventsByDate[key]) eventsByDate[key] = [];
     eventsByDate[key].push(event);
@@ -74,7 +116,7 @@ export default async function CalendarPage() {
           <h1 className="text-2xl font-bold text-[#fafafa]">
             {MONTH_NAMES[displayMonth]} {displayYear}
           </h1>
-          <p className="mt-1 text-sm text-[#71717a]">Team calendar and milestones</p>
+          <p className="mt-1 text-sm text-[#71717a]">Team calendar and cadence</p>
         </div>
         <Link href="/dashboard/calendar/new">
           <Button className="gap-1.5">
@@ -121,10 +163,20 @@ export default async function CalendarPage() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     {dayEvents.map((event) => (
-                      <div key={event.id} className="text-[10px] px-1.5 py-0.5 rounded bg-[#312e81] border border-[#6366f1]/20 overflow-hidden">
-                        <div className="font-medium text-[#818cf8] truncate">{event.title}</div>
-                        {event.initiativeName && (
-                          <div className="text-[#71717a] truncate">{event.initiativeName}</div>
+                      <div
+                        key={event.id}
+                        className={[
+                          "text-[10px] px-1.5 py-0.5 rounded border overflow-hidden",
+                          event.kind === "CADENCE"
+                            ? "bg-[#052e16] border-[#22c55e]/30"
+                            : "bg-[#312e81] border-[#6366f1]/20",
+                        ].join(" ")}
+                      >
+                        <div className={event.kind === "CADENCE" ? "font-medium text-[#86efac] truncate" : "font-medium text-[#818cf8] truncate"}>
+                          {event.title}
+                        </div>
+                        {event.subtitle && (
+                          <div className="text-[#71717a] truncate">{event.subtitle}</div>
                         )}
                       </div>
                     ))}
@@ -136,10 +188,10 @@ export default async function CalendarPage() {
         })}
       </div>
 
-      {(events ?? []).length === 0 && (
+      {items.length === 0 && (
         <div className="text-center py-10 border-2 border-dashed border-[#27272a] rounded-xl">
           <p className="text-sm text-[#71717a] mb-3">
-            No events this month. Create your first calendar event.
+            No events or cadence this month. Create your first calendar event.
           </p>
           <Link href="/dashboard/calendar/new">
             <Button className="gap-1.5"><Plus size={14} />Create Event</Button>

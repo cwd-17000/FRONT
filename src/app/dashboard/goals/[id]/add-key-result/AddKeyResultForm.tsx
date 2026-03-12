@@ -34,7 +34,6 @@ export default function AddKeyResultForm({
   const [title, setTitle] = useState("");
   const [metricName, setMetricName] = useState("");
   const [unit, setUnit] = useState("");
-  const [baselineValue, setBaselineValue] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [ownerId, setOwnerId] = useState("");
 
@@ -119,31 +118,15 @@ export default function AddKeyResultForm({
             />
           </div>
 
-          {/* Baseline → Target */}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Baseline value"
-              type="number"
-              value={baselineValue}
-              onChange={(e) => setBaselineValue(e.target.value)}
-              placeholder="Current starting point"
-              min="0"
-            />
-            <Input
-              label="Target value *"
-              type="number"
-              value={targetValue}
-              onChange={(e) => setTargetValue(e.target.value)}
-              placeholder="Goal to hit"
-              min="0"
-              required
-            />
-          </div>
-          {baselineValue !== "" && (
-            <p className="-mt-2 text-xs text-[#71717a]">
-              Baseline will be captured on the first check-in after the key result is created.
-            </p>
-          )}
+          <Input
+            label="Target value *"
+            type="number"
+            value={targetValue}
+            onChange={(e) => setTargetValue(e.target.value)}
+            placeholder="Goal to hit"
+            min="0"
+            required
+          />
 
           {/* Owner */}
           {members.length > 0 && (
