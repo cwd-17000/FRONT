@@ -25,6 +25,7 @@ interface CalendarEvent {
 interface CadenceItem {
   id: string;
   name: string;
+  recurrence: string;
   nextOccurrence?: string;
   goal?: { id: string; title: string };
 }
@@ -35,6 +36,69 @@ interface CalendarDisplayItem {
   startDate: string;
   subtitle?: string;
   kind: "EVENT" | "CADENCE";
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addMonths(date: Date, months: number) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
+function expandCadenceOccurrences(cadence: CadenceItem, year: number, month: number): string[] {
+  if (!cadence.nextOccurrence) return [];
+
+  const seed = new Date(cadence.nextOccurrence);
+  if (Number.isNaN(seed.getTime())) return [];
+
+  const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
+  const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  const dates: string[] = [];
+
+  const pushIfInRange = (date: Date) => {
+    if (date >= monthStart && date <= monthEnd) {
+      dates.push(date.toISOString());
+    }
+  };
+
+  if (cadence.recurrence === "WEEKLY" || cadence.recurrence === "BIWEEKLY") {
+    const intervalDays = cadence.recurrence === "WEEKLY" ? 7 : 14;
+
+    let backward = new Date(seed);
+    while (backward >= monthStart) {
+      pushIfInRange(backward);
+      backward = addDays(backward, -intervalDays);
+    }
+
+    let forward = addDays(seed, intervalDays);
+    while (forward <= monthEnd) {
+      pushIfInRange(forward);
+      forward = addDays(forward, intervalDays);
+    }
+  } else if (cadence.recurrence === "MONTHLY" || cadence.recurrence === "QUARTERLY") {
+    const intervalMonths = cadence.recurrence === "MONTHLY" ? 1 : 3;
+
+    let backward = new Date(seed);
+    while (backward >= monthStart) {
+      pushIfInRange(backward);
+      backward = addMonths(backward, -intervalMonths);
+    }
+
+    let forward = addMonths(seed, intervalMonths);
+    while (forward <= monthEnd) {
+      pushIfInRange(forward);
+      forward = addMonths(forward, intervalMonths);
+    }
+  } else {
+    pushIfInRange(seed);
+  }
+
+  return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -66,6 +130,20 @@ export default async function CalendarPage() {
   const events: CalendarEvent[] = calendarRes.ok ? await calendarRes.json() : [];
   const cadence: CadenceItem[] = cadenceRes.ok ? await cadenceRes.json() : [];
 
+  const today = new Date();
+  const displayYear = today.getFullYear();
+  const displayMonth = today.getMonth();
+
+  const cadenceItems: CalendarDisplayItem[] = cadence.flatMap((item) =>
+    expandCadenceOccurrences(item, displayYear, displayMonth).map((occurrence, index) => ({
+      id: `cadence-${item.id}-${index}`,
+      title: item.name,
+      startDate: occurrence,
+      subtitle: item.goal?.title,
+      kind: "CADENCE" as const,
+    }))
+  );
+
   const items: CalendarDisplayItem[] = [
     ...events.map((event) => ({
       id: event.id,
@@ -74,15 +152,7 @@ export default async function CalendarPage() {
       subtitle: event.initiativeName,
       kind: "EVENT" as const,
     })),
-    ...cadence
-      .filter((item) => !!item.nextOccurrence)
-      .map((item) => ({
-        id: `cadence-${item.id}`,
-        title: item.name,
-        startDate: item.nextOccurrence!,
-        subtitle: item.goal?.title,
-        kind: "CADENCE" as const,
-      })),
+    ...cadenceItems,
   ];
 
   const eventsByDate: Record<string, CalendarDisplayItem[]> = {};
@@ -91,10 +161,6 @@ export default async function CalendarPage() {
     if (!eventsByDate[key]) eventsByDate[key] = [];
     eventsByDate[key].push(event);
   }
-
-  const today = new Date();
-  const displayYear = today.getFullYear();
-  const displayMonth = today.getMonth();
 
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1);
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();

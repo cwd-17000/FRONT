@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Plus, Pencil, Trash2, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useMe } from "@/hooks/useMe";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface ProcessStep {
   id: string;
@@ -20,19 +24,26 @@ interface ProcessFlow {
   name: string;
   description: string | null;
   category: string | null;
-  createdAt: string;
   createdBy: { id: string; firstName: string | null; lastName: string | null; email: string };
   steps: ProcessStep[];
 }
 
 const STEP_TYPES = ["start", "task", "decision", "approval", "end"] as const;
 
-const STEP_CONFIG: Record<string, { label: string; color: string; bg: string; shape: "pill" | "diamond" | "rounded" }> = {
-  start:    { label: "Start",    color: "#166534", bg: "#dcfce7", shape: "pill" },
-  task:     { label: "Task",     color: "#1e40af", bg: "#dbeafe", shape: "rounded" },
-  decision: { label: "Decision", color: "#92400e", bg: "#fef3c7", shape: "diamond" },
-  approval: { label: "Approval", color: "#7e22ce", bg: "#f3e8ff", shape: "rounded" },
-  end:      { label: "End",      color: "#991b1b", bg: "#fee2e2", shape: "pill" },
+const STEP_LABELS: Record<string, string> = {
+  start: "Start",
+  task: "Task",
+  decision: "Decision",
+  approval: "Approval",
+  end: "End",
+};
+
+const STEP_VARIANT: Record<string, "default" | "info" | "accent" | "warning" | "success"> = {
+  start: "success",
+  task: "info",
+  decision: "warning",
+  approval: "accent",
+  end: "default",
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -49,123 +60,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-function StepNode({ step, onEdit, onDelete, isFirst, isLast, onMoveUp, onMoveDown }: {
-  step: ProcessStep;
-  onEdit: (step: ProcessStep) => void;
-  onDelete: (id: string) => void;
-  isFirst: boolean;
-  isLast: boolean;
-  onMoveUp: (id: string) => void;
-  onMoveDown: (id: string) => void;
-}) {
-  const cfg = STEP_CONFIG[step.type] ?? STEP_CONFIG.task;
-  const isPill = cfg.shape === "pill";
-  const isDiamond = cfg.shape === "diamond";
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      {/* Connector line above (except first) */}
-      {!isFirst && (
-        <div style={{ width: 2, height: 28, background: "#d1d5db" }} />
-      )}
-
-      <div style={{ position: "relative", width: "100%", maxWidth: 420 }}>
-        {/* Move buttons */}
-        <div style={{
-          position: "absolute", left: -44, top: "50%", transform: "translateY(-50%)",
-          display: "flex", flexDirection: "column", gap: 2,
-        }}>
-          <button
-            onClick={() => onMoveUp(step.id)}
-            disabled={isFirst}
-            style={{ padding: "2px 6px", fontSize: 11, opacity: isFirst ? 0.3 : 1, cursor: isFirst ? "default" : "pointer" }}
-          >▲</button>
-          <button
-            onClick={() => onMoveDown(step.id)}
-            disabled={isLast}
-            style={{ padding: "2px 6px", fontSize: 11, opacity: isLast ? 0.3 : 1, cursor: isLast ? "default" : "pointer" }}
-          >▼</button>
-        </div>
-
-        {isDiamond ? (
-          <div style={{ position: "relative", padding: "2px 0" }}>
-            {/* Diamond shape via CSS transform */}
-            <div style={{
-              background: cfg.bg, border: `2px solid ${cfg.color}`,
-              borderRadius: 8, padding: "14px 24px",
-              transform: "perspective(80px) rotateX(0deg)",
-            }}>
-              <StepContent step={step} cfg={cfg} onEdit={onEdit} onDelete={onDelete} />
-            </div>
-            {/* Visual diamond indicator */}
-            <div style={{
-              position: "absolute", right: -12, top: "50%", transform: "translateY(-50%) rotate(45deg)",
-              width: 12, height: 12, background: cfg.color, borderRadius: 2,
-            }} />
-          </div>
-        ) : (
-          <div style={{
-            background: cfg.bg, border: `2px solid ${cfg.color}`,
-            borderRadius: isPill ? 40 : 10, padding: "14px 24px",
-          }}>
-            <StepContent step={step} cfg={cfg} onEdit={onEdit} onDelete={onDelete} />
-          </div>
-        )}
-      </div>
-
-      {/* Connector line below (except last) */}
-      {!isLast && (
-        <div style={{ width: 2, height: 28, background: "#d1d5db" }} />
-      )}
-    </div>
-  );
-}
-
-function StepContent({ step, cfg, onEdit, onDelete }: {
-  step: ProcessStep;
-  cfg: { label: string; color: string; bg: string };
-  onEdit: (step: ProcessStep) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: cfg.color,
-              textTransform: "uppercase", letterSpacing: 0.5,
-            }}>{cfg.label}</span>
-            {step.assigneeRole && (
-              <span style={{ fontSize: 10, color: "#6b7280" }}>
-                → {ROLE_LABELS[step.assigneeRole] ?? step.assigneeRole}
-              </span>
-            )}
-            {step.durationDays && (
-              <span style={{ fontSize: 10, color: "#6b7280" }}>
-                ~{step.durationDays}d
-              </span>
-            )}
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{step.title}</div>
-          {step.description && (
-            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>{step.description}</div>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 4, marginLeft: 12, flexShrink: 0 }}>
-          <button
-            onClick={() => onEdit(step)}
-            style={{ padding: "3px 8px", fontSize: 11, background: "rgba(255,255,255,0.7)" }}
-          >Edit</button>
-          <button
-            onClick={() => onDelete(step.id)}
-            style={{ padding: "3px 8px", fontSize: 11, background: "rgba(255,255,255,0.7)", color: "#dc2626", border: "1px solid #fecaca" }}
-          >×</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const fieldClass =
+  "w-full rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 py-2.5 text-sm text-[#fafafa] placeholder:text-[#52525b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
 export default function ProcessFlowDetailPage() {
   const { me, loading: meLoading } = useMe();
@@ -175,13 +71,13 @@ export default function ProcessFlowDetailPage() {
 
   const [flow, setFlow] = useState<ProcessFlow | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [editingFlow, setEditingFlow] = useState(false);
   const [flowName, setFlowName] = useState("");
   const [flowDesc, setFlowDesc] = useState("");
   const [flowCategory, setFlowCategory] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [isSavingFlow, setIsSavingFlow] = useState(false);
 
-  // Add/edit step modal
   const [showStepModal, setShowStepModal] = useState(false);
   const [editingStep, setEditingStep] = useState<ProcessStep | null>(null);
   const [stepTitle, setStepTitle] = useState("");
@@ -189,24 +85,34 @@ export default function ProcessFlowDetailPage() {
   const [stepType, setStepType] = useState<string>("task");
   const [stepRole, setStepRole] = useState("");
   const [stepDuration, setStepDuration] = useState("");
-  const [stepSaving, setStepSaving] = useState(false);
+  const [isSavingStep, setIsSavingStep] = useState(false);
 
   const fetchFlow = useCallback(async (orgId: string) => {
-    const data = await fetch(`/api/organizations/${orgId}/process-flows/${flowId}`, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null);
+    const data = await fetch(`/api/organizations/${orgId}/process-flows/${flowId}`, {
+      credentials: "include",
+    }).then((res) => (res.ok ? res.json() : null));
+
     if (data) setFlow(data);
     else router.push("/dashboard/process-flows");
   }, [flowId, router]);
 
   useEffect(() => {
     if (meLoading) return;
-    if (!me?.activeOrgId) { router.push("/login"); return; }
+    if (!me?.activeOrgId) {
+      router.push("/login");
+      return;
+    }
+
     fetchFlow(me.activeOrgId).finally(() => setLoading(false));
   }, [me, meLoading, router, fetchFlow]);
 
   function openAddStep() {
     setEditingStep(null);
-    setStepTitle(""); setStepDesc(""); setStepType("task"); setStepRole(""); setStepDuration("");
+    setStepTitle("");
+    setStepDesc("");
+    setStepType("task");
+    setStepRole("");
+    setStepDuration("");
     setShowStepModal(true);
   }
 
@@ -220,17 +126,19 @@ export default function ProcessFlowDetailPage() {
     setShowStepModal(true);
   }
 
-  async function handleSaveStep(e: React.FormEvent) {
+  async function handleSaveStep(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!me?.activeOrgId || !flow) return;
-    setStepSaving(true);
+    if (!me?.activeOrgId || !flow || !stepTitle.trim()) return;
+
+    setIsSavingStep(true);
+
     try {
       const body = {
         title: stepTitle.trim(),
         description: stepDesc.trim() || undefined,
         type: stepType,
         assigneeRole: stepRole || undefined,
-        durationDays: stepDuration ? parseInt(stepDuration) : undefined,
+        durationDays: stepDuration ? parseInt(stepDuration, 10) : undefined,
         order: editingStep ? editingStep.order : flow.steps.length,
       };
 
@@ -250,28 +158,32 @@ export default function ProcessFlowDetailPage() {
         setShowStepModal(false);
       }
     } finally {
-      setStepSaving(false);
+      setIsSavingStep(false);
     }
   }
 
   async function handleDeleteStep(stepId: string) {
     if (!me?.activeOrgId || !flow || !confirm("Remove this step?")) return;
+
     await fetch(`/api/organizations/${me.activeOrgId}/process-flows/${flow.id}/steps/${stepId}`, {
       method: "DELETE",
       credentials: "include",
     });
+
     await fetchFlow(me.activeOrgId);
   }
 
   async function handleMoveStep(stepId: string, direction: "up" | "down") {
     if (!me?.activeOrgId || !flow) return;
+
     const steps = [...flow.steps].sort((a, b) => a.order - b.order);
-    const idx = steps.findIndex((s) => s.id === stepId);
+    const idx = steps.findIndex((step) => step.id === stepId);
+
     if (direction === "up" && idx === 0) return;
     if (direction === "down" && idx === steps.length - 1) return;
 
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    const orderedIds = steps.map((s) => s.id);
+    const orderedIds = steps.map((step) => step.id);
     [orderedIds[idx], orderedIds[swapIdx]] = [orderedIds[swapIdx], orderedIds[idx]];
 
     await fetch(`/api/organizations/${me.activeOrgId}/process-flows/${flow.id}/steps/reorder`, {
@@ -280,13 +192,16 @@ export default function ProcessFlowDetailPage() {
       credentials: "include",
       body: JSON.stringify({ orderedIds }),
     });
+
     await fetchFlow(me.activeOrgId);
   }
 
-  async function handleSaveFlowMeta(e: React.FormEvent) {
+  async function handleSaveFlowMeta(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!me?.activeOrgId || !flow) return;
-    setSaving(true);
+    if (!me?.activeOrgId || !flow || !flowName.trim()) return;
+
+    setIsSavingFlow(true);
+
     try {
       await fetch(`/api/organizations/${me.activeOrgId}/process-flows/${flow.id}`, {
         method: "PATCH",
@@ -298,213 +213,173 @@ export default function ProcessFlowDetailPage() {
           category: flowCategory || undefined,
         }),
       });
+
       await fetchFlow(me.activeOrgId);
       setEditingFlow(false);
     } finally {
-      setSaving(false);
+      setIsSavingFlow(false);
     }
   }
 
-  if (meLoading || loading) return <div style={{ padding: 40, color: "#666" }}>Loading...</div>;
+  if (meLoading || loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-[#71717a] p-6">
+        <div className="w-4 h-4 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
+        Loading...
+      </div>
+    );
+  }
+
   if (!flow) return null;
 
   const sortedSteps = [...flow.steps].sort((a, b) => a.order - b.order);
+  const author = [flow.createdBy.firstName, flow.createdBy.lastName].filter(Boolean).join(" ") || flow.createdBy.email;
 
   return (
-    <div style={{ padding: 40, maxWidth: 600 }}>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        {editingFlow ? (
-          <form onSubmit={handleSaveFlowMeta} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input
-              value={flowName} onChange={(e) => setFlowName(e.target.value)}
-              required style={{ padding: "8px 12px", fontSize: 18, fontWeight: 700, borderRadius: 6, border: "1px solid #d1d5db", width: "100%", boxSizing: "border-box" }}
-            />
-            <textarea
-              value={flowDesc} onChange={(e) => setFlowDesc(e.target.value)}
-              placeholder="Description (optional)" rows={2}
-              style={{ padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", resize: "vertical", width: "100%", boxSizing: "border-box" }}
-            />
-            <select
-              value={flowCategory} onChange={(e) => setFlowCategory(e.target.value)}
-              style={{ padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db" }}
-            >
-              <option value="">No category</option>
-              {Object.entries(CATEGORY_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="submit" disabled={saving} style={{ padding: "7px 16px", fontSize: 13 }}>
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button type="button" onClick={() => setEditingFlow(false)} style={{ padding: "7px 12px", fontSize: 13 }}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{flow.name}</h1>
-                {flow.category && (
-                  <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
-                    {CATEGORY_LABELS[flow.category] ?? flow.category}
-                  </span>
-                )}
-                {flow.description && (
-                  <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>{flow.description}</p>
-                )}
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Link href="/dashboard/process-flows" className="inline-flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#fafafa] transition-colors">
+        <ArrowLeft size={14} /> Back to Process Flows
+      </Link>
+
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          {editingFlow ? (
+            <form onSubmit={handleSaveFlowMeta} className="space-y-4">
+              <input value={flowName} onChange={(e) => setFlowName(e.target.value)} required className={fieldClass} />
+              <textarea value={flowDesc} onChange={(e) => setFlowDesc(e.target.value)} rows={3} placeholder="Description (optional)" className={`${fieldClass} resize-vertical`} />
+              <select value={flowCategory} onChange={(e) => setFlowCategory(e.target.value)} className={`${fieldClass} h-10 py-0`}>
+                <option value="">No category</option>
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={isSavingFlow}>{isSavingFlow ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="ghost" onClick={() => setEditingFlow(false)}>Cancel</Button>
               </div>
-              <button
+            </form>
+          ) : (
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-2xl font-bold text-[#fafafa]">{flow.name}</h1>
+                  {flow.category && <Badge variant="default">{CATEGORY_LABELS[flow.category] ?? flow.category}</Badge>}
+                </div>
+                {flow.description && <p className="text-sm text-[#71717a]">{flow.description}</p>}
+                <p className="text-xs text-[#52525b] mt-2">Created by {author}</p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-1"
                 onClick={() => {
                   setFlowName(flow.name);
                   setFlowDesc(flow.description ?? "");
                   setFlowCategory(flow.category ?? "");
                   setEditingFlow(true);
                 }}
-                style={{ padding: "5px 14px", fontSize: 12, flexShrink: 0, marginLeft: 12 }}
               >
-                Edit
-              </button>
+                <Pencil size={12} /> Edit
+              </Button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Flow visualization */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
-            Steps <span style={{ fontWeight: 400, color: "#9ca3af" }}>({sortedSteps.length})</span>
-          </h2>
-          <button onClick={openAddStep} style={{ padding: "6px 14px", fontSize: 13 }}>
-            + Add Step
-          </button>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[#a1a1aa]">Steps ({sortedSteps.length})</h2>
+          <Button size="sm" className="gap-1.5" onClick={openAddStep}>
+            <Plus size={13} /> Add Step
+          </Button>
         </div>
 
         {sortedSteps.length === 0 ? (
-          <div style={{
-            border: "2px dashed #e5e7eb", borderRadius: 12, padding: "40px 24px",
-            textAlign: "center", color: "#9ca3af", fontSize: 14,
-          }}>
-            No steps yet. Add your first step to start building the flow.
-          </div>
+          <Card>
+            <CardContent className="p-8 text-center text-sm text-[#71717a]">
+              No steps yet. Add your first step to start building the flow.
+            </CardContent>
+          </Card>
         ) : (
-          <div style={{ paddingLeft: 52 }}>
-            {sortedSteps.map((step, i) => (
-              <StepNode
-                key={step.id}
-                step={step}
-                onEdit={openEditStep}
-                onDelete={handleDeleteStep}
-                isFirst={i === 0}
-                isLast={i === sortedSteps.length - 1}
-                onMoveUp={(id) => handleMoveStep(id, "up")}
-                onMoveDown={(id) => handleMoveStep(id, "down")}
-              />
+          <div className="flex flex-col gap-2">
+            {sortedSteps.map((step, index) => (
+              <Card key={step.id}>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => handleMoveStep(step.id, "up")} disabled={index === 0} title="Move up">
+                      <ChevronUp size={12} />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => handleMoveStep(step.id, "down")} disabled={index === sortedSteps.length - 1} title="Move down">
+                      <ChevronDown size={12} />
+                    </Button>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="text-sm font-semibold text-[#fafafa]">{step.title}</p>
+                      <Badge variant={STEP_VARIANT[step.type] ?? "default"}>{STEP_LABELS[step.type] ?? step.type}</Badge>
+                      {step.assigneeRole && <span className="text-xs text-[#71717a]">→ {ROLE_LABELS[step.assigneeRole] ?? step.assigneeRole}</span>}
+                      {step.durationDays && <span className="text-xs text-[#71717a]">~{step.durationDays}d</span>}
+                    </div>
+                    {step.description && <p className="text-xs text-[#71717a]">{step.description}</p>}
+                  </div>
+
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" variant="secondary" className="gap-1" onClick={() => openEditStep(step)}>
+                      <Pencil size={12} /> Edit
+                    </Button>
+                    <Button size="icon" variant="danger" onClick={() => handleDeleteStep(step.id)} title="Delete step">
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
       </div>
 
-      {/* Step modal */}
       {showStepModal && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 12, padding: 28, width: "100%", maxWidth: 480,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          }}>
-            <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700 }}>
-              {editingStep ? "Edit Step" : "Add Step"}
-            </h3>
-            <form onSubmit={handleSaveStep} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>
-                  Step title *
-                </label>
-                <input
-                  value={stepTitle} onChange={(e) => setStepTitle(e.target.value)}
-                  placeholder="e.g. Review copy draft" required
-                  style={{ width: "100%", padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", boxSizing: "border-box" }}
-                />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-[#27272a] bg-[#18181b] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-[#fafafa]">{editingStep ? "Edit Step" : "Add Step"}</h3>
+              <button onClick={() => setShowStepModal(false)} className="text-[#71717a] hover:text-[#fafafa]">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStep} className="space-y-3">
+              <input value={stepTitle} onChange={(e) => setStepTitle(e.target.value)} required placeholder="Step title" className={fieldClass} />
+              <textarea value={stepDesc} onChange={(e) => setStepDesc(e.target.value)} rows={2} placeholder="Description (optional)" className={`${fieldClass} resize-vertical`} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select value={stepType} onChange={(e) => setStepType(e.target.value)} className={`${fieldClass} h-10 py-0`}>
+                  {STEP_TYPES.map((type) => (
+                    <option key={type} value={type}>{STEP_LABELS[type]}</option>
+                  ))}
+                </select>
+
+                <select value={stepRole} onChange={(e) => setStepRole(e.target.value)} className={`${fieldClass} h-10 py-0`}>
+                  <option value="">Assigned to: Any</option>
+                  <option value="owner">Owner</option>
+                  <option value="admin">Admin</option>
+                  <option value="member">Member</option>
+                </select>
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>
-                  Description
-                </label>
-                <textarea
-                  value={stepDesc} onChange={(e) => setStepDesc(e.target.value)}
-                  placeholder="What happens in this step?"
-                  rows={2}
-                  style={{ width: "100%", padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", resize: "vertical", boxSizing: "border-box" }}
-                />
-              </div>
+              <input type="number" min="1" value={stepDuration} onChange={(e) => setStepDuration(e.target.value)} placeholder="Estimated duration in days (optional)" className={fieldClass} />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>
-                    Step type
-                  </label>
-                  <select
-                    value={stepType} onChange={(e) => setStepType(e.target.value)}
-                    style={{ width: "100%", padding: "8px 10px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db" }}
-                  >
-                    {STEP_TYPES.map((t) => (
-                      <option key={t} value={t}>{STEP_CONFIG[t].label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>
-                    Assigned to
-                  </label>
-                  <select
-                    value={stepRole} onChange={(e) => setStepRole(e.target.value)}
-                    style={{ width: "100%", padding: "8px 10px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db" }}
-                  >
-                    <option value="">Any</option>
-                    <option value="owner">Owner</option>
-                    <option value="admin">Admin</option>
-                    <option value="member">Member</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>
-                  Estimated duration (days)
-                </label>
-                <input
-                  type="number" min="1"
-                  value={stepDuration} onChange={(e) => setStepDuration(e.target.value)}
-                  placeholder="Optional"
-                  style={{ width: "100%", padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <button type="submit" disabled={stepSaving || !stepTitle.trim()} style={{ padding: "8px 18px", fontSize: 14 }}>
-                  {stepSaving ? "Saving..." : editingStep ? "Save Changes" : "Add Step"}
-                </button>
-                <button type="button" onClick={() => setShowStepModal(false)} style={{ padding: "8px 14px", fontSize: 14 }}>
-                  Cancel
-                </button>
+              <div className="flex gap-2 pt-1">
+                <Button type="submit" disabled={isSavingStep || !stepTitle.trim()}>
+                  {isSavingStep ? "Saving..." : editingStep ? "Save Changes" : "Add Step"}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setShowStepModal(false)}>Cancel</Button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      <div style={{ marginTop: 32 }}>
-        <Link href="/dashboard/process-flows">← Back to Process Flows</Link>
-      </div>
     </div>
   );
 }
