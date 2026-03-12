@@ -57,7 +57,6 @@ export default function AddKeyResultForm({
       };
       if (unit.trim()) body.unit = unit.trim();
       if (metricName.trim()) body.description = metricName.trim();
-      if (baselineValue !== "") body.currentValue = parseFloat(baselineValue);
       if (ownerId) body.ownerId = ownerId;
 
       const res = await fetch(`/api/organizations/${activeOrgId}/goals`, {
@@ -140,6 +139,11 @@ export default function AddKeyResultForm({
               required
             />
           </div>
+          {baselineValue !== "" && (
+            <p className="-mt-2 text-xs text-[#71717a]">
+              Baseline will be captured on the first check-in after the key result is created.
+            </p>
+          )}
 
           {/* Owner */}
           {members.length > 0 && (
