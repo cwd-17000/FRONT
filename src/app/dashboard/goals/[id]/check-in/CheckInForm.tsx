@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type StatusColor = "RED" | "YELLOW" | "GREEN";
 
@@ -14,51 +17,37 @@ interface Props {
   goalUnit?: string;
 }
 
-const RAG_OPTIONS: { value: StatusColor; label: string; description: string; color: string; bg: string }[] = [
+const RAG_OPTIONS: { value: StatusColor; label: string; description: string; color: string; border: string; bg: string }[] = [
   {
     value: "GREEN",
     label: "On Track",
     description: "We are confident this goal will be achieved",
-    color: "#10b981",
-    bg: "#f0fdf4",
+    color: "#22c55e",
+    border: "#22c55e",
+    bg: "#052e16",
   },
   {
     value: "YELLOW",
     label: "At Risk",
     description: "There are blockers or concerns that need attention",
-    color: "#f59e0b",
-    bg: "#fffbeb",
+    color: "#fbbf24",
+    border: "#f59e0b",
+    bg: "#1c1400",
   },
   {
     value: "RED",
     label: "Off Track",
     description: "This goal is unlikely to be achieved without major intervention",
-    color: "#ef4444",
-    bg: "#fef2f2",
+    color: "#f87171",
+    border: "#ef4444",
+    bg: "#1c0a0a",
   },
 ];
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  fontSize: 14,
-  border: "1px solid #d1d5db",
-  borderRadius: 8,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: 6,
-  fontWeight: 500,
-  fontSize: 14,
-};
 
 function confidenceColor(score: number) {
   if (score < 40) return "#ef4444";
   if (score <= 70) return "#f59e0b";
-  return "#10b981";
+  return "#22c55e";
 }
 
 export default function CheckInForm({
@@ -121,61 +110,37 @@ export default function CheckInForm({
   }
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 580, margin: "0 auto" }}>
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#9ca3af" }}>Check-in for</p>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{goalTitle}</h1>
+    <div className="p-6 max-w-xl mx-auto space-y-6">
+      <div>
+        <p className="text-xs text-[#71717a] mb-1">Check-in for</p>
+        <h1 className="text-xl font-bold text-[#fafafa]">{goalTitle}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Progress input */}
         <div>
-          <label style={labelStyle}>
-            Current Progress{goalUnit ? ` (${goalUnit})` : ""}
-          </label>
-          <input
+          <Input
+            label={`Current Progress${goalUnit ? ` (${goalUnit})` : ""}`}
             type="number"
             value={progress}
             onChange={(e) => setProgress(e.target.value)}
             placeholder={`e.g. ${goalCurrentValue}`}
             min="0"
-            style={inputStyle}
             required
           />
           {progressPct !== null && (
-            <div style={{ marginTop: 8 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: 12,
-                  color: "#6b7280",
-                  marginBottom: 4,
-                }}
-              >
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-[#71717a] mb-1.5">
                 <span>
-                  {parseFloat(progress) || 0}
-                  {goalUnit ? ` ${goalUnit}` : ""} / {goalTargetValue}
+                  {parseFloat(progress) || 0}{goalUnit ? ` ${goalUnit}` : ""} / {goalTargetValue}
                   {goalUnit ? ` ${goalUnit}` : ""}
                 </span>
                 <span>{progressPct}%</span>
               </div>
-              <div
-                style={{
-                  height: 6,
-                  background: "#f3f4f6",
-                  borderRadius: 99,
-                  overflow: "hidden",
-                }}
-              >
+              <div className="h-2 rounded-full bg-[#27272a] overflow-hidden">
                 <div
-                  style={{
-                    height: "100%",
-                    width: `${progressPct}%`,
-                    background: "#3b82f6",
-                    borderRadius: 99,
-                    transition: "width 0.2s",
-                  }}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${progressPct}%`, background: "#6366f1" }}
                 />
               </div>
             </div>
@@ -184,45 +149,28 @@ export default function CheckInForm({
 
         {/* Status color (RAG) */}
         <div>
-          <label style={labelStyle}>Status *</label>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Status *</label>
+          <div className="flex flex-col gap-2">
             {RAG_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setStatusColor(opt.value)}
+                className="text-left p-4 rounded-xl border-2 transition-all duration-150 flex items-center gap-3"
                 style={{
-                  textAlign: "left",
-                  padding: "12px 16px",
-                  border: `2px solid ${statusColor === opt.value ? opt.color : "#e5e7eb"}`,
-                  borderRadius: 8,
-                  background: statusColor === opt.value ? opt.bg : "#fff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
+                  borderColor: statusColor === opt.value ? opt.border : "#3f3f46",
+                  background: statusColor === opt.value ? opt.bg : "#18181b",
                 }}
               >
                 <div
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: opt.color,
-                    flexShrink: 0,
-                  }}
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ background: opt.color }}
                 />
                 <div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: statusColor === opt.value ? opt.color : "#374151",
-                    }}
-                  >
+                  <div className="text-sm font-semibold" style={{ color: statusColor === opt.value ? opt.color : "#fafafa" }}>
                     {opt.label}
                   </div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>{opt.description}</div>
+                  <div className="text-xs text-[#71717a]">{opt.description}</div>
                 </div>
               </button>
             ))}
@@ -231,7 +179,7 @@ export default function CheckInForm({
 
         {/* Confidence score */}
         <div>
-          <label style={labelStyle}>
+          <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">
             Confidence Score:{" "}
             <strong style={{ color: confidenceColor(parseInt(confidenceScore)) }}>
               {confidenceScore}%
@@ -243,17 +191,9 @@ export default function CheckInForm({
             onChange={(e) => setConfidenceScore(e.target.value)}
             min="0"
             max="100"
-            style={{ width: "100%", cursor: "pointer" }}
+            className="w-full cursor-pointer accent-[#6366f1]"
           />
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 11,
-              color: "#9ca3af",
-              marginTop: 2,
-            }}
-          >
+          <div className="flex justify-between text-xs text-[#52525b] mt-1">
             <span>Not confident (0)</span>
             <span>Very confident (100)</span>
           </div>
@@ -261,52 +201,34 @@ export default function CheckInForm({
 
         {/* Note */}
         <div>
-          <label style={labelStyle}>Note</label>
+          <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Note</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={4}
             placeholder="What happened this period? Any blockers? What are the next steps?"
-            style={{ ...inputStyle, resize: "vertical" }}
+            className="w-full rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 py-2.5 text-sm text-[#fafafa] placeholder:text-[#52525b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors resize-vertical"
           />
         </div>
 
         {error && (
-          <p style={{ margin: 0, color: "#ef4444", fontSize: 14 }}>{error}</p>
+          <div className="flex items-start gap-2 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/10 px-3 py-2.5">
+            <AlertCircle size={14} className="text-[#ef4444] mt-0.5 shrink-0" />
+            <p className="text-sm text-[#ef4444]">{error}</p>
+          </div>
         )}
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            type="submit"
-            disabled={!canSubmit || isSubmitting}
-            style={{
-              padding: "11px 28px",
-              background: canSubmit && !isSubmitting ? "#111827" : "#e5e7eb",
-              color: canSubmit && !isSubmitting ? "#fff" : "#9ca3af",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: canSubmit && !isSubmitting ? "pointer" : "not-allowed",
-              opacity: isSubmitting ? 0.7 : 1,
-            }}
-          >
+        <div className="flex gap-3">
+          <Button type="submit" disabled={!canSubmit || isSubmitting}>
             {isSubmitting ? "Saving..." : "Submit Check-in"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => router.push(`/dashboard/goals/${goalId}`)}
-            style={{
-              padding: "11px 20px",
-              background: "transparent",
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

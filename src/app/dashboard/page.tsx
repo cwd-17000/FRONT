@@ -4,15 +4,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   Target,
-  Rocket,
-  Megaphone,
-  Clock,
   ArrowRight,
   Calendar,
-  CheckCircle2,
   GitBranch,
   RefreshCw,
-  Users,
+  Building2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import OrgSwitcher from "./OrgSwitcher";
@@ -42,14 +38,11 @@ async function getMyOrgs(token: string) {
 }
 
 const QUICK_LINKS = [
-  { label: "Goals",         href: "/dashboard/goals",          icon: Target,       desc: "Track OKRs & key results" },
-  { label: "Initiatives",   href: "/dashboard/initiatives",    icon: Rocket,       desc: "Strategic projects" },
-  { label: "Campaigns",     href: "/dashboard/campaigns",      icon: Megaphone,    desc: "Marketing campaigns" },
-  { label: "Calendar",      href: "/dashboard/calendar",       icon: Calendar,     desc: "Events & milestones" },
-  { label: "Approvals",     href: "/dashboard/approvals",      icon: CheckCircle2, desc: "Pending reviews" },
-  { label: "Process Flows", href: "/dashboard/process-flows",  icon: GitBranch,    desc: "Workflows & SOPs" },
-  { label: "Rituals",       href: "/dashboard/rituals",        icon: RefreshCw,    desc: "Recurring ceremonies" },
-  { label: "Members",       href: "/dashboard/members",        icon: Users,        desc: "Team management" },
+  { label: "Goals",          href: "/dashboard/goals",           icon: Target,     desc: "Track OKRs & key results" },
+  { label: "Calendar",       href: "/dashboard/calendar",        icon: Calendar,   desc: "Events & milestones" },
+  { label: "Process Flows",  href: "/dashboard/process-flows",   icon: GitBranch,  desc: "Workflows & SOPs" },
+  { label: "Rituals",        href: "/dashboard/rituals",         icon: RefreshCw,  desc: "Recurring ceremonies" },
+  { label: "My Organization",href: "/dashboard/my-organization", icon: Building2,  desc: "Members, teams & org chart" },
 ];
 
 export default async function DashboardPage() {
@@ -67,67 +60,12 @@ export default async function DashboardPage() {
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
   const headers = { cookie: `access_token=${tokenCookie.value}` };
 
-  const [goalsRes, initiativesRes, campaignsRes] = await Promise.all([
-    fetch(`${base}/goals`, { headers, cache: "no-store" }),
-    fetch(`${base}/initiatives`, { headers, cache: "no-store" }),
-    fetch(`${base}/campaigns`, { headers, cache: "no-store" }),
-  ]);
-
-  const [goals, initiatives, campaigns] = await Promise.all([
-    goalsRes.ok ? goalsRes.json() : [],
-    initiativesRes.ok ? initiativesRes.json() : [],
-    campaignsRes.ok ? campaignsRes.json() : [],
-  ]);
-
-  const draftResults = await Promise.all(
-    (campaigns as { id: string }[]).map((c) =>
-      fetch(`${base}/campaigns/${c.id}/drafts`, { headers, cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : []))
-        .catch(() => [])
-    )
-  );
-  const allDrafts = (draftResults as { approvalStatus: string }[][]).flat();
-  const pendingCount: number = allDrafts.filter(
-    (d) => d.approvalStatus === "pending"
-  ).length;
-
+  const goalsRes = await fetch(`${base}/goals`, { headers, cache: "no-store" });
+  const goals = goalsRes.ok ? await goalsRes.json() : [];
   const goalCount: number = Array.isArray(goals) ? goals.length : (goals?.items?.length ?? 0);
-  const initiativeCount: number = initiatives.length;
-  const campaignCount: number = campaigns.length;
-
-  const METRICS = [
-    {
-      label: "Active Goals",
-      value: goalCount,
-      icon: Target,
-      href: "/dashboard/goals",
-      accent: "#6366f1",
-    },
-    {
-      label: "Initiatives",
-      value: initiativeCount,
-      icon: Rocket,
-      href: "/dashboard/initiatives",
-      accent: "#8b5cf6",
-    },
-    {
-      label: "Campaigns",
-      value: campaignCount,
-      icon: Megaphone,
-      href: "/dashboard/campaigns",
-      accent: "#3b82f6",
-    },
-    {
-      label: "Pending Approvals",
-      value: pendingCount,
-      icon: Clock,
-      href: "/dashboard/approvals",
-      accent: pendingCount > 0 ? "#f59e0b" : "#71717a",
-    },
-  ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-8">
       {/* Page title */}
       <div>
         <h1 className="text-2xl font-bold text-[#fafafa]">Overview</h1>
@@ -137,48 +75,51 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* ── Row 1: Metric cards (bento) ─────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {METRICS.map(({ label, value, icon: Icon, href, accent }) => (
-          <Link key={href} href={href} className="group block">
-            <Card hover className="h-full">
-              <CardContent className="flex flex-col gap-3 p-5">
-                <div
-                  className="flex items-center justify-center w-9 h-9 rounded-lg"
-                  style={{ background: accent + "20" }}
-                >
-                  <Icon size={18} style={{ color: accent }} />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-[#fafafa]">{value}</p>
-                  <p className="text-sm text-[#71717a] mt-0.5">{label}</p>
-                </div>
-                <div className="flex items-center gap-1 text-xs mt-auto" style={{ color: accent }}>
-                  <span>View</span>
-                  <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5 duration-150" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      {/* ── Row 1: Goals metric card ──────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link href="/dashboard/goals" className="group block sm:col-span-1">
+          <Card hover className="h-full">
+            <CardContent className="flex flex-col gap-3 p-5">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#312e81]">
+                <Target size={18} className="text-[#818cf8]" />
+              </div>
+              <div>
+                <p className="text-4xl font-bold text-[#fafafa]">{goalCount}</p>
+                <p className="text-sm text-[#71717a] mt-0.5">Active Goals</p>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-[#818cf8] mt-auto">
+                <span>View all goals</span>
+                <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5 duration-150" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Role badge */}
+        <div className="sm:col-span-2 flex flex-col justify-center gap-2 pl-2">
+          <p className="text-xs text-[#71717a] uppercase tracking-wider font-medium">Your role</p>
+          <p className="text-lg font-semibold text-[#fafafa] capitalize">
+            {user.activeOrgRole ?? "Member"}
+          </p>
+        </div>
       </div>
 
-      {/* ── Row 2: Quick navigation grid ────────────────────────── */}
+      {/* ── Row 2: Quick navigation ───────────────────────────────── */}
       <div>
-        <h2 className="text-sm font-semibold text-[#a1a1aa] uppercase tracking-wider mb-4">
+        <h2 className="text-xs font-semibold text-[#71717a] uppercase tracking-wider mb-4">
           Navigate
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {QUICK_LINKS.map(({ label, href, icon: Icon, desc }) => (
             <Link key={href} href={href} className="group block">
               <Card hover>
-                <CardContent className="flex items-start gap-3 p-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#27272a] shrink-0 group-hover:bg-[#312e81] transition-colors duration-150">
+                <CardContent className="flex flex-col gap-2.5 p-4">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#27272a] group-hover:bg-[#312e81] transition-colors duration-150">
                     <Icon size={15} className="text-[#a1a1aa] group-hover:text-[#818cf8] transition-colors duration-150" />
                   </div>
-                  <div className="min-w-0">
+                  <div>
                     <p className="text-sm font-medium text-[#fafafa]">{label}</p>
-                    <p className="text-xs text-[#71717a] mt-0.5 truncate">{desc}</p>
+                    <p className="text-xs text-[#71717a] mt-0.5 leading-snug">{desc}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -187,10 +128,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Row 3: Organization ─────────────────────────────────── */}
+      {/* ── Row 3: Organization switcher (only if multi-org) ─────── */}
       {orgs.length > 1 && (
         <div>
-          <h2 className="text-sm font-semibold text-[#a1a1aa] uppercase tracking-wider mb-4">
+          <h2 className="text-xs font-semibold text-[#71717a] uppercase tracking-wider mb-4">
             Organization
           </h2>
           <Card>

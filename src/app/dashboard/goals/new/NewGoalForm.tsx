@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type GoalType = "OBJECTIVE" | "KEY_RESULT";
 type GoalTimeframe = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
@@ -31,22 +34,8 @@ const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
   { value: "WEEKLY", label: "Weekly" },
 ];
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  fontSize: 14,
-  border: "1px solid #d1d5db",
-  borderRadius: 8,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: 6,
-  fontWeight: 500,
-  fontSize: 14,
-};
+const selectClass =
+  "w-full h-10 rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
 export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props) {
   const router = useRouter();
@@ -111,31 +100,26 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
   }
 
   return (
-    <div style={{ padding: "40px", maxWidth: 560, margin: "0 auto" }}>
+    <div className="p-6 max-w-xl mx-auto">
 
       {/* ── Step 1: Objective or Key Result ── */}
       {step === 1 && (
-        <div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 700 }}>New Goal</h1>
-          <p style={{ margin: "0 0 28px", fontSize: 14, color: "#6b7280" }}>
-            What type of goal are you creating?
-          </p>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#fafafa]">New Goal</h1>
+            <p className="mt-1 text-sm text-[#71717a]">What type of goal are you creating?</p>
+          </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex flex-col gap-3">
             <button
               type="button"
               onClick={() => { setSelectedType("OBJECTIVE"); setStep(2); }}
-              style={{
-                textAlign: "left",
-                padding: "20px 24px",
-                border: "2px solid #e5e7eb",
-                borderRadius: 10,
-                background: "#fff",
-                cursor: "pointer",
-              }}
+              className="text-left p-5 rounded-xl border-2 border-[#3f3f46] bg-[#18181b] hover:border-[#6366f1] hover:bg-[#1e1e2e] transition-all duration-150 group"
             >
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Objective</div>
-              <div style={{ fontSize: 13, color: "#6b7280" }}>
+              <div className="font-semibold text-[#fafafa] mb-1 group-hover:text-[#818cf8] transition-colors">
+                Objective
+              </div>
+              <div className="text-sm text-[#71717a]">
                 A qualitative, inspiring goal that sets direction. Objectives can roll up to other Objectives.
               </div>
             </button>
@@ -143,98 +127,71 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
             <button
               type="button"
               onClick={() => { setSelectedType("KEY_RESULT"); setStep(2); }}
-              style={{
-                textAlign: "left",
-                padding: "20px 24px",
-                border: "2px solid #e5e7eb",
-                borderRadius: 10,
-                background: "#fff",
-                cursor: "pointer",
-              }}
+              className="text-left p-5 rounded-xl border-2 border-[#3f3f46] bg-[#18181b] hover:border-[#6366f1] hover:bg-[#1e1e2e] transition-all duration-150 group"
             >
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Key Result</div>
-              <div style={{ fontSize: 13, color: "#6b7280" }}>
+              <div className="font-semibold text-[#fafafa] mb-1 group-hover:text-[#818cf8] transition-colors">
+                Key Result
+              </div>
+              <div className="text-sm text-[#71717a]">
                 A measurable outcome linked to an Objective. Progress rolls up automatically.
               </div>
             </button>
           </div>
 
-          <div style={{ marginTop: 24 }}>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/goals")}
-              style={{
-                padding: "10px 20px",
-                background: "transparent",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                fontSize: 14,
-                cursor: "pointer",
-              }}
-            >
+          <div>
+            <Button variant="ghost" onClick={() => router.push("/dashboard/goals")}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* ── Step 2: Goal details ── */}
       {step === 2 && selectedType && (
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 18, padding: 0, lineHeight: 1 }}
-              >
-                ←
-              </button>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
-                New {selectedType === "OBJECTIVE" ? "Objective" : "Key Result"}
-              </h1>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="text-[#71717a] hover:text-[#fafafa] transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-2xl font-bold text-[#fafafa]">
+              New {selectedType === "OBJECTIVE" ? "Objective" : "Key Result"}
+            </h1>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
+          <div className="flex flex-col gap-5">
             {/* Title */}
-            <div>
-              <label style={labelStyle}>Title *</label>
-              <input
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                placeholder={
-                  selectedType === "OBJECTIVE"
-                    ? "e.g. Become the undisputed market leader"
-                    : "e.g. Increase MQL volume to 500"
-                }
-                style={{ ...inputStyle, fontSize: 15 }}
-              />
-            </div>
+            <Input
+              label="Title *"
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              placeholder={
+                selectedType === "OBJECTIVE"
+                  ? "e.g. Become the undisputed market leader"
+                  : "e.g. Increase MQL volume to 500"
+              }
+            />
 
             {/* Timeframe */}
             <div>
-              <label style={labelStyle}>Timeframe *</label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Timeframe *</label>
+              <div className="flex gap-2">
                 {TIMEFRAME_OPTIONS.map((tf) => (
                   <button
                     key={tf.value}
                     type="button"
                     onClick={() => setTimeframe(tf.value)}
-                    style={{
-                      flex: 1,
-                      padding: "8px 4px",
-                      border: `2px solid ${timeframe === tf.value ? "#111827" : "#e5e7eb"}`,
-                      borderRadius: 8,
-                      background: timeframe === tf.value ? "#111827" : "#fff",
-                      color: timeframe === tf.value ? "#fff" : "#374151",
-                      fontSize: 13,
-                      fontWeight: timeframe === tf.value ? 600 : 400,
-                      cursor: "pointer",
-                    }}
+                    className={[
+                      "flex-1 py-2 px-1 rounded-lg border-2 text-sm font-medium transition-all duration-150",
+                      timeframe === tf.value
+                        ? "border-[#6366f1] bg-[#312e81] text-[#818cf8]"
+                        : "border-[#3f3f46] bg-[#27272a] text-[#71717a] hover:border-[#52525b] hover:text-[#a1a1aa]",
+                    ].join(" ")}
                   >
                     {tf.label}
                   </button>
@@ -245,11 +202,11 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
             {/* Owner */}
             {members.length > 0 && (
               <div>
-                <label style={labelStyle}>Owner</label>
+                <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">Owner</label>
                 <select
                   value={ownerId}
                   onChange={(e) => setOwnerId(e.target.value)}
-                  style={{ ...inputStyle, background: "#fff" }}
+                  className={selectClass}
                 >
                   <option value="">— Assign to me —</option>
                   {members.map((m) => (
@@ -263,37 +220,31 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
 
             {/* Key Result-only fields */}
             {selectedType === "KEY_RESULT" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div>
-                  <label style={labelStyle}>Target Value</label>
-                  <input
-                    type="number"
-                    value={targetValue}
-                    onChange={(e) => setTargetValue(e.target.value)}
-                    placeholder="e.g. 500"
-                    min="0"
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Unit</label>
-                  <input
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    placeholder='e.g. "%", "calls", "$"'
-                    style={inputStyle}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Target Value"
+                  type="number"
+                  value={targetValue}
+                  onChange={(e) => setTargetValue(e.target.value)}
+                  placeholder="e.g. 500"
+                  min="0"
+                />
+                <Input
+                  label="Unit"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  placeholder='e.g. "%", "calls", "$"'
+                />
               </div>
             )}
 
             {/* Parent objective */}
             <div>
-              <label style={labelStyle}>
+              <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">
                 {selectedType === "OBJECTIVE" ? "Parent Objective (optional)" : "Parent Objective *"}
               </label>
               {objectives.length === 0 ? (
-                <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
+                <p className="text-sm text-[#52525b]">
                   {selectedType === "KEY_RESULT"
                     ? "No Objectives exist yet. Create an Objective first."
                     : "No existing Objectives to link to."}
@@ -302,7 +253,7 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
                 <select
                   value={parentGoalId}
                   onChange={(e) => setParentGoalId(e.target.value)}
-                  style={{ ...inputStyle, background: "#fff" }}
+                  className={selectClass}
                   required={selectedType === "KEY_RESULT"}
                 >
                   <option value="">— None —</option>
@@ -317,41 +268,26 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
           </div>
 
           {error && (
-            <p style={{ color: "#ef4444", fontSize: 14, marginTop: 16 }}>{error}</p>
+            <div className="flex items-start gap-2 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/10 px-3 py-2.5">
+              <AlertCircle size={14} className="text-[#ef4444] mt-0.5 shrink-0" />
+              <p className="text-sm text-[#ef4444]">{error}</p>
+            </div>
           )}
 
-          <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
-            <button
+          <div className="flex gap-3">
+            <Button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              style={{
-                padding: "11px 28px",
-                background: canSubmit && !isSubmitting ? "#111827" : "#e5e7eb",
-                color: canSubmit && !isSubmitting ? "#fff" : "#9ca3af",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: canSubmit && !isSubmitting ? "pointer" : "not-allowed",
-                opacity: isSubmitting ? 0.7 : 1,
-              }}
             >
               {isSubmitting ? "Creating..." : `Create ${selectedType === "OBJECTIVE" ? "Objective" : "Key Result"}`}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => router.push("/dashboard/goals")}
-              style={{
-                padding: "11px 20px",
-                background: "transparent",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                fontSize: 14,
-                cursor: "pointer",
-              }}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}

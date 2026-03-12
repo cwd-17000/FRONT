@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { MilestonesPanel } from "./MilestonesPanel";
 import { LeadMetricsPanel } from "./LeadMetricsPanel";
 import { ExternalCampaignsPanel } from "./ExternalCampaignsPanel";
@@ -64,7 +69,7 @@ interface Goal {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  FINANCIAL: "#10b981",
+  FINANCIAL: "#22c55e",
   CUSTOMER: "#3b82f6",
   INTERNAL_PROCESS: "#8b5cf6",
   LEARNING_GROWTH: "#f59e0b",
@@ -81,21 +86,21 @@ const TYPE_LABELS: Record<string, string> = {
   OBJECTIVE: "Objective",
   KEY_RESULT: "Key Result",
 };
-const STATUS_COLORS_MAP: Record<string, string> = {
-  DRAFT: "#9ca3af",
-  ACTIVE: "#3b82f6",
-  COMPLETED: "#10b981",
-  CANCELLED: "#ef4444",
+const STATUS_VARIANT: Record<string, "default" | "success" | "info" | "warning" | "danger"> = {
+  DRAFT: "default",
+  ACTIVE: "info",
+  COMPLETED: "success",
+  CANCELLED: "danger",
 };
 
 function confidenceColor(score: number) {
   if (score < 40) return "#ef4444";
   if (score <= 70) return "#f59e0b";
-  return "#10b981";
+  return "#22c55e";
 }
 
 function ragColor(c: string) {
-  if (c === "GREEN") return "#10b981";
+  if (c === "GREEN") return "#22c55e";
   if (c === "YELLOW") return "#f59e0b";
   return "#ef4444";
 }
@@ -133,16 +138,16 @@ function ProgressChart({ checkIns, unit }: { checkIns: CheckIn[]; unit?: string 
         const y = pad.top + iH - t * iH;
         return (
           <g key={t}>
-            <line x1={pad.left} x2={pad.left + iW} y1={y} y2={y} stroke="#f3f4f6" />
-            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize={10} fill="#9ca3af">
+            <line x1={pad.left} x2={pad.left + iW} y1={y} y2={y} stroke="#27272a" />
+            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize={10} fill="#71717a">
               {Math.round(t * maxVal)}{unit ? unit : ""}
             </text>
           </g>
         );
       })}
-      <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinejoin="round" />
+      <path d={pathD} fill="none" stroke="#6366f1" strokeWidth={2} strokeLinejoin="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill={ragColor(p.c.statusColor)} stroke="#fff" strokeWidth={1.5} />
+        <circle key={i} cx={p.x} cy={p.y} r={4} fill={ragColor(p.c.statusColor)} stroke="#18181b" strokeWidth={1.5} />
       ))}
     </svg>
   );
@@ -171,7 +176,6 @@ export default async function GoalDetailPage({
 
   const goal: Goal = await goalRes.json();
 
-  // Fetch workspace data in parallel
   const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
   const [milestonesRes, leadMetricsRes, campaignsRes, ritualsRes] = await Promise.all([
     fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
@@ -203,257 +207,123 @@ export default async function GoalDetailPage({
     goal.status === "ACTIVE" &&
     (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
 
+  const catColor = CATEGORY_COLORS[goal.category] ?? "#71717a";
+
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 800, margin: "0 auto" }}>
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Check-in nudge banner */}
       {isDueForCheckIn && (
-        <div
-          style={{
-            marginBottom: 20,
-            padding: "12px 16px",
-            background: "#fefce8",
-            border: "1px solid #fde68a",
-            borderRadius: 8,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: 13, color: "#92400e", fontWeight: 500 }}>
-            ⚠️ No check-in{daysSinceCheckIn !== null ? ` in ${daysSinceCheckIn} days` : " yet"}. Keep the team updated.
+        <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/10">
+          <span className="text-sm text-[#fbbf24] font-medium">
+            No check-in{daysSinceCheckIn !== null ? ` in ${daysSinceCheckIn} days` : " yet"}. Keep the team updated.
           </span>
           <Link href={`/dashboard/goals/${id}/check-in`}>
-            <button
-              style={{
-                padding: "6px 14px",
-                background: "#d97706",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Check In Now
-            </button>
+            <Button size="sm">Check In Now</Button>
           </Link>
         </div>
       )}
 
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 24,
-          gap: 16,
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              flexWrap: "wrap",
-              marginBottom: 8,
-            }}
-          >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
             <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "2px 8px",
-                borderRadius: 99,
-                background: (CATEGORY_COLORS[goal.category] ?? "#6b7280") + "20",
-                color: CATEGORY_COLORS[goal.category] ?? "#6b7280",
-              }}
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: catColor + "18", color: catColor }}
             >
               {CATEGORY_LABELS[goal.category] ?? goal.category}
             </span>
-            <span style={{ fontSize: 12, color: "#9ca3af" }}>
-              {TYPE_LABELS[goal.type] ?? goal.type}
-            </span>
-            <span style={{ fontSize: 12, color: "#9ca3af" }}>· {goal.timeframe}</span>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "2px 8px",
-                borderRadius: 99,
-                background: "#f3f4f6",
-                color: STATUS_COLORS_MAP[goal.status] ?? "#333",
-              }}
-            >
+            <span className="text-xs text-[#71717a]">{TYPE_LABELS[goal.type] ?? goal.type}</span>
+            <span className="text-xs text-[#71717a]">· {goal.timeframe}</span>
+            <Badge variant={STATUS_VARIANT[goal.status] ?? "default"}>
               {goal.status}
-            </span>
+            </Badge>
           </div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{goal.title}</h1>
+          <h1 className="text-2xl font-bold text-[#fafafa]">{goal.title}</h1>
           {goal.description && (
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: "#6b7280" }}>{goal.description}</p>
+            <p className="mt-2 text-sm text-[#71717a]">{goal.description}</p>
           )}
         </div>
 
         {goal.type === "KEY_RESULT" && goal.status === "ACTIVE" && (
           <Link href={`/dashboard/goals/${id}/check-in`}>
-            <button
-              style={{
-                padding: "9px 18px",
-                background: "#111827",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              + Check In
-            </button>
+            <Button className="gap-1.5 shrink-0">
+              <Plus size={14} /> Check In
+            </Button>
           </Link>
         )}
       </div>
 
-      {/* Stats */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 12,
-          marginBottom: 28,
-        }}
-      >
-        <div
-          style={{
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            padding: "12px 16px",
-          }}
-        >
-          <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>Confidence</div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: confidenceColor(goal.confidenceScore),
-            }}
-          >
-            {goal.confidenceScore}%
-          </div>
-        </div>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-[#71717a] mb-1">Confidence</p>
+            <p className="text-2xl font-bold" style={{ color: confidenceColor(goal.confidenceScore) }}>
+              {goal.confidenceScore}%
+            </p>
+          </CardContent>
+        </Card>
 
         {goal.targetValue !== undefined && (
-          <div
-            style={{
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              padding: "12px 16px",
-            }}
-          >
-            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>Progress</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{progress}%</div>
-            <div style={{ fontSize: 11, color: "#9ca3af" }}>
-              {goal.currentValue}
-              {goal.unit ? ` ${goal.unit}` : ""} / {goal.targetValue}
-              {goal.unit ? ` ${goal.unit}` : ""}
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-[#71717a] mb-1">Progress</p>
+              <p className="text-2xl font-bold text-[#fafafa]">{progress}%</p>
+              <p className="text-xs text-[#71717a]">
+                {goal.currentValue}{goal.unit ? ` ${goal.unit}` : ""} / {goal.targetValue}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
-        <div
-          style={{
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            padding: "12px 16px",
-          }}
-        >
-          <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>Owner</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>
-            {goal.owner.firstName} {goal.owner.lastName}
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-[#71717a] mb-1">Owner</p>
+            <p className="text-sm font-semibold text-[#fafafa]">
+              {goal.owner.firstName} {goal.owner.lastName}
+            </p>
+          </CardContent>
+        </Card>
 
-        <div
-          style={{
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            padding: "12px 16px",
-          }}
-        >
-          <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>Due</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(goal.dueDate)}</div>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-[#71717a] mb-1">Due</p>
+            <p className="text-sm font-semibold text-[#fafafa]">{formatDate(goal.dueDate)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Progress bar */}
       {goal.targetValue !== undefined && goal.targetValue > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 13,
-              color: "#6b7280",
-              marginBottom: 6,
-            }}
-          >
-            <span>Progress toward target</span>
-            <span>{progress}%</span>
-          </div>
-          <div
-            style={{ height: 8, background: "#f3f4f6", borderRadius: 99, overflow: "hidden" }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progress}%`,
-                background: confidenceColor(goal.confidenceScore),
-                borderRadius: 99,
-              }}
-            />
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex justify-between text-sm text-[#71717a]">
+              <span>Progress toward target</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} color={confidenceColor(goal.confidenceScore)} />
+          </CardContent>
+        </Card>
       )}
 
       {/* Parent goal */}
       {goal.parentGoal && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Parent Goal</h2>
-          <Link href={`/dashboard/goals/${goal.parentGoal.id}`} style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                gap: 8,
-                alignItems: "center",
-                padding: "8px 14px",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                background: "#fff",
-                fontSize: 13,
-              }}
-            >
+        <div>
+          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-2">Parent Goal</h2>
+          <Link href={`/dashboard/goals/${goal.parentGoal.id}`}>
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#3f3f46] bg-[#18181b] hover:border-[#6366f1]/50 transition-colors text-sm">
               <span
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
                 style={{
-                  fontSize: 11,
-                  padding: "1px 6px",
-                  borderRadius: 99,
-                  background:
-                    (CATEGORY_COLORS[goal.parentGoal.category] ?? "#6b7280") + "20",
-                  color: CATEGORY_COLORS[goal.parentGoal.category] ?? "#6b7280",
-                  fontWeight: 600,
+                  background: (CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a") + "18",
+                  color: CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a",
                 }}
               >
                 {TYPE_LABELS[goal.parentGoal.type] ?? goal.parentGoal.type}
               </span>
-              <span style={{ fontWeight: 500, color: "#111827" }}>{goal.parentGoal.title}</span>
-              <span style={{ color: "#9ca3af" }}>↗</span>
+              <span className="font-medium text-[#fafafa]">{goal.parentGoal.title}</span>
+              <span className="text-[#71717a]">↗</span>
             </div>
           </Link>
         </div>
@@ -461,73 +331,36 @@ export default async function GoalDetailPage({
 
       {/* Child goals / Key Results */}
       {goal.childGoals.length > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>
+        <div>
+          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
             {goal.type === "OBJECTIVE" ? "Key Results" : "Sub-goals"} ({goal.childGoals.length})
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {goal.childGoals.map((kr) => {
               const krPct =
                 kr.targetValue && kr.targetValue > 0
                   ? Math.min(100, Math.round((kr.currentValue / kr.targetValue) * 100))
                   : 0;
               return (
-                <Link
-                  key={kr.id}
-                  href={`/dashboard/goals/${kr.id}`}
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  <div
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 8,
-                      padding: "12px 16px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: 12,
-                      background: "#fff",
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
-                        {kr.title}
+                <Link key={kr.id} href={`/dashboard/goals/${kr.id}`}>
+                  <Card hover>
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#fafafa] mb-2">{kr.title}</p>
+                        {kr.targetValue !== undefined && (
+                          <Progress value={krPct} color={confidenceColor(kr.confidenceScore)} size="xs" />
+                        )}
                       </div>
-                      {kr.targetValue !== undefined && (
-                        <div
-                          style={{
-                            height: 4,
-                            background: "#f3f4f6",
-                            borderRadius: 99,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: "100%",
-                              width: `${krPct}%`,
-                              background: confidenceColor(kr.confidenceScore),
-                              borderRadius: 99,
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: confidenceColor(kr.confidenceScore),
-                        }}
-                      >
-                        {kr.confidenceScore}%
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold" style={{ color: confidenceColor(kr.confidenceScore) }}>
+                          {kr.confidenceScore}%
+                        </p>
+                        <p className="text-xs text-[#71717a]">
+                          {kr.owner.firstName} {kr.owner.lastName}
+                        </p>
                       </div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        {kr.owner.firstName} {kr.owner.lastName}
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </Link>
               );
             })}
@@ -537,86 +370,47 @@ export default async function GoalDetailPage({
 
       {/* Progress chart */}
       {goal.checkIns.length >= 2 && (
-        <div
-          style={{
-            marginBottom: 28,
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            padding: "16px 20px",
-            background: "#fff",
-          }}
-        >
-          <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>
-            Progress Over Time
-          </h2>
-          <ProgressChart checkIns={goal.checkIns} unit={goal.unit} />
-          <div
-            style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#9ca3af" }}
-          >
-            <span>
-              ●{" "}
-              <span style={{ color: "#10b981" }}>On Track</span>
-            </span>
-            <span>
-              ●{" "}
-              <span style={{ color: "#f59e0b" }}>At Risk</span>
-            </span>
-            <span>
-              ●{" "}
-              <span style={{ color: "#ef4444" }}>Off Track</span>
-            </span>
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-5">
+            <h2 className="text-sm font-semibold text-[#a1a1aa] mb-4">Progress Over Time</h2>
+            <ProgressChart checkIns={goal.checkIns} unit={goal.unit} />
+            <div className="flex gap-4 mt-3 text-xs text-[#71717a]">
+              <span><span style={{ color: "#22c55e" }}>●</span> On Track</span>
+              <span><span style={{ color: "#f59e0b" }}>●</span> At Risk</span>
+              <span><span style={{ color: "#ef4444" }}>●</span> Off Track</span>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Check-in history */}
       {goal.checkIns.length > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>
+        <div>
+          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
             Check-in History ({goal._count.checkIns})
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="flex flex-col gap-2">
             {goal.checkIns.map((ci) => (
               <div
                 key={ci.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderLeft: `4px solid ${ragColor(ci.statusColor)}`,
-                  borderRadius: 8,
-                  padding: "12px 16px",
-                  background: "#fff",
-                }}
+                className="rounded-lg border border-[#27272a] bg-[#18181b] p-4"
+                style={{ borderLeftWidth: 3, borderLeftColor: ragColor(ci.statusColor) }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: ci.note ? 6 : 0,
-                  }}
-                >
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>
-                      {ci.progress}
-                      {goal.unit ? ` ${goal.unit}` : ""}
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-[#fafafa]">
+                      {ci.progress}{goal.unit ? ` ${goal.unit}` : ""}
                     </span>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: confidenceColor(ci.confidenceScore),
-                      }}
-                    >
+                    <span className="text-sm font-bold" style={{ color: confidenceColor(ci.confidenceScore) }}>
                       {ci.confidenceScore}% confidence
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                    {ci.author.firstName} {ci.author.lastName} ·{" "}
-                    {formatDate(ci.createdAt)}
-                  </div>
+                  <span className="text-xs text-[#71717a]">
+                    {ci.author.firstName} {ci.author.lastName} · {formatDate(ci.createdAt)}
+                  </span>
                 </div>
                 {ci.note && (
-                  <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>{ci.note}</p>
+                  <p className="text-sm text-[#a1a1aa] mt-1">{ci.note}</p>
                 )}
               </div>
             ))}
@@ -625,86 +419,44 @@ export default async function GoalDetailPage({
       )}
 
       {/* Comments */}
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>
+      <div>
+        <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
           Comments ({goal._count.comments})
         </h2>
         {goal.comments.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#9ca3af" }}>No comments yet.</p>
+          <p className="text-sm text-[#52525b]">No comments yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="flex flex-col gap-2">
             {goal.comments.map((comment) => (
-              <div
-                key={comment.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  padding: "12px 16px",
-                  background: "#fff",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>
-                    {comment.author.firstName} {comment.author.lastName}
-                  </span>
-                  <span style={{ fontSize: 12, color: "#9ca3af" }}>
-                    {formatDate(comment.createdAt)}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>{comment.body}</p>
-              </div>
+              <Card key={comment.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-[#fafafa]">
+                      {comment.author.firstName} {comment.author.lastName}
+                    </span>
+                    <span className="text-xs text-[#71717a]">{formatDate(comment.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-[#a1a1aa]">{comment.body}</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
       </div>
 
-      {/* ── Workspace panels ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          marginTop: 8,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-          gap: 16,
-          marginBottom: 28,
-        }}
-      >
-        <MilestonesPanel
-          goalId={id}
-          orgId={user.activeOrgId!}
-          initialData={milestones}
-        />
-        <LeadMetricsPanel
-          goalId={id}
-          orgId={user.activeOrgId!}
-          initialData={leadMetrics}
-        />
+      {/* Workspace panels */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
+        <LeadMetricsPanel goalId={id} orgId={user.activeOrgId!} initialData={leadMetrics} />
       </div>
 
-      <ExternalCampaignsPanel
-        goalId={id}
-        orgId={user.activeOrgId!}
-        initialData={externalCampaigns}
-      />
+      <ExternalCampaignsPanel goalId={id} orgId={user.activeOrgId!} initialData={externalCampaigns} />
 
-      <div style={{ marginTop: 16, marginBottom: 28 }}>
-        <RitualsPanel
-          goalId={id}
-          orgId={user.activeOrgId!}
-          rituals={rituals}
-        />
-      </div>
+      <RitualsPanel goalId={id} orgId={user.activeOrgId!} rituals={rituals} />
 
-      <div style={{ marginTop: 8 }}>
-        <Link href="/dashboard/goals" style={{ fontSize: 14, color: "#6b7280" }}>
-          ← Back to Goals
-        </Link>
-      </div>
+      <Link href="/dashboard/goals" className="inline-flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#fafafa] transition-colors">
+        <ArrowLeft size={14} /> Back to Goals
+      </Link>
     </div>
   );
 }

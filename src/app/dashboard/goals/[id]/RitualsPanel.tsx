@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Ritual {
   id: string;
@@ -16,6 +19,13 @@ const RECURRENCE_LABELS: Record<string, string> = {
   BIWEEKLY: "Bi-weekly",
   MONTHLY: "Monthly",
   QUARTERLY: "Quarterly",
+};
+
+const RECURRENCE_VARIANT: Record<string, "default" | "accent" | "info" | "success"> = {
+  WEEKLY: "info",
+  BIWEEKLY: "accent",
+  MONTHLY: "success",
+  QUARTERLY: "default",
 };
 
 function formatDate(iso?: string) {
@@ -36,79 +46,33 @@ export function RitualsPanel({
   goalId: string;
 }) {
   return (
-    <section
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "16px 20px",
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+    <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-[#a1a1aa]">
           Rituals ({rituals.length})
         </h2>
-        <Link
-          href={`/dashboard/rituals/new?goalId=${goalId}`}
-          style={{
-            fontSize: 12,
-            padding: "4px 10px",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            background: "#fff",
-            cursor: "pointer",
-            textDecoration: "none",
-            color: "#111827",
-          }}
-        >
-          + Schedule ritual
+        <Link href={`/dashboard/rituals/new?goalId=${goalId}`}>
+          <Button variant="ghost" size="sm" className="gap-1 text-xs">
+            <Plus size={12} /> Schedule ritual
+          </Button>
         </Link>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {rituals.map((r) => (
-          <Link
-            key={r.id}
-            href={`/dashboard/rituals/${r.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 10px",
-                border: "1px solid #f3f4f6",
-                borderRadius: 8,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ flex: 1, fontWeight: 500 }}>{r.name}</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  padding: "2px 8px",
-                  background: "#f3f4f6",
-                  borderRadius: 4,
-                  whiteSpace: "nowrap",
-                }}
-              >
+          <Link key={r.id} href={`/dashboard/rituals/${r.id}`}>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#27272a] bg-[#09090b] hover:border-[#3f3f46] hover:bg-[#18181b] transition-all duration-150">
+              <span className="flex-1 text-sm font-medium text-[#fafafa] truncate">{r.name}</span>
+              <Badge variant={RECURRENCE_VARIANT[r.recurrence] ?? "default"} className="text-[10px] shrink-0">
                 {RECURRENCE_LABELS[r.recurrence] ?? r.recurrence}
-              </span>
+              </Badge>
               {r.nextOccurrence && (
-                <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
+                <span className="text-xs text-[#52525b] whitespace-nowrap">
                   Next {formatDate(r.nextOccurrence)}
                 </span>
               )}
               {r._count && (
-                <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
+                <span className="text-xs text-[#52525b] whitespace-nowrap">
                   {r._count.checkIns} check-in{r._count.checkIns !== 1 ? "s" : ""}
                 </span>
               )}
@@ -116,9 +80,7 @@ export function RitualsPanel({
           </Link>
         ))}
         {rituals.length === 0 && (
-          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
-            No rituals linked to this goal yet.
-          </p>
+          <p className="text-sm text-[#52525b]">No rituals linked to this goal yet.</p>
         )}
       </div>
     </section>

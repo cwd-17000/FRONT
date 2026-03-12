@@ -6,11 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Target,
-  Rocket,
-  Megaphone,
   Calendar,
-  CheckCircle2,
-  Users,
   GitBranch,
   RefreshCw,
   Building2,
@@ -21,16 +17,12 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Goals",      href: "/dashboard/goals",          icon: Target },
-  { label: "Initiatives", href: "/dashboard/initiatives",   icon: Rocket },
-  { label: "Campaigns",  href: "/dashboard/campaigns",      icon: Megaphone },
-  { label: "Calendar",   href: "/dashboard/calendar",       icon: Calendar },
-  { label: "Approvals",  href: "/dashboard/approvals",      icon: CheckCircle2 },
-  { label: "Process Flows", href: "/dashboard/process-flows", icon: GitBranch },
-  { label: "Rituals",    href: "/dashboard/rituals",        icon: RefreshCw },
-  { label: "Teams",      href: "/dashboard/teams",          icon: Building2 },
-  { label: "Members",    href: "/dashboard/members",        icon: Users },
+  { label: "Dashboard",       href: "/dashboard",               icon: LayoutDashboard },
+  { label: "Goals",           href: "/dashboard/goals",         icon: Target },
+  { label: "Calendar",        href: "/dashboard/calendar",      icon: Calendar },
+  { label: "Process Flows",   href: "/dashboard/process-flows", icon: GitBranch },
+  { label: "Rituals",         href: "/dashboard/rituals",       icon: RefreshCw },
+  { label: "My Organization", href: "/dashboard/my-organization", icon: Building2 },
 ];
 
 export default function Sidebar() {
@@ -97,9 +89,7 @@ export default function Sidebar() {
           className="flex items-center justify-center w-full h-8 rounded-lg text-[#71717a] hover:text-[#fafafa] hover:bg-[#27272a] transition-colors duration-150"
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          {!collapsed && (
-            <span className="ml-1.5 text-xs">Collapse</span>
-          )}
+          {!collapsed && <span className="ml-1.5 text-xs">Collapse</span>}
         </button>
       </div>
     </aside>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MetricEntry {
   id: string;
@@ -18,6 +20,9 @@ interface LeadMetric {
   currentValue: number;
   entries: MetricEntry[];
 }
+
+const inputClass =
+  "w-full h-9 rounded-lg border border-[#3f3f46] bg-[#09090b] px-3 text-sm text-[#fafafa] placeholder:text-[#52525b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
 export function LeadMetricsPanel({
   goalId,
@@ -80,79 +85,41 @@ export function LeadMetricsPanel({
   }
 
   return (
-    <section
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "16px 20px",
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+    <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-[#a1a1aa]">
           Lead Metrics ({metrics.length}/3)
         </h2>
         {metrics.length < 3 && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setAdding((a) => !a)}
-            style={{
-              fontSize: 12,
-              padding: "4px 10px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              background: "#fff",
-              cursor: "pointer",
-            }}
+            className="gap-1 text-xs"
           >
-            {adding ? "Cancel" : "+ Add"}
-          </button>
+            {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add</>}
+          </Button>
         )}
       </div>
 
       {adding && (
         <form
           onSubmit={handleAddMetric}
-          style={{
-            marginBottom: 16,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: "12px",
-            background: "#f9fafb",
-            borderRadius: 8,
-          }}
+          className="mb-4 flex flex-col gap-2 p-3 rounded-lg bg-[#09090b] border border-[#27272a]"
         >
           <input
             required
             placeholder="Metric name (e.g. Weekly outbound emails)"
             value={newForm.name}
             onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
-            style={{
-              padding: "7px 10px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              fontSize: 13,
-            }}
+            className={inputClass}
           />
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2">
             <input
               placeholder="Unit (e.g. emails)"
               value={newForm.unit}
               onChange={(e) => setNewForm((f) => ({ ...f, unit: e.target.value }))}
-              style={{
-                flex: 1,
-                padding: "7px 10px",
-                border: "1px solid #d1d5db",
-                borderRadius: 6,
-                fontSize: 13,
-              }}
+              className={inputClass}
             />
             <input
               type="number"
@@ -160,35 +127,16 @@ export function LeadMetricsPanel({
               placeholder="Weekly target"
               value={newForm.targetValue}
               onChange={(e) => setNewForm((f) => ({ ...f, targetValue: e.target.value }))}
-              style={{
-                flex: 1,
-                padding: "7px 10px",
-                border: "1px solid #d1d5db",
-                borderRadius: 6,
-                fontSize: 13,
-              }}
+              className={inputClass}
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              alignSelf: "flex-start",
-              padding: "6px 14px",
-              background: "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
+          <Button type="submit" size="sm" disabled={saving}>
             {saving ? "Saving…" : "Save metric"}
-          </button>
+          </Button>
         </form>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="flex flex-col gap-4">
         {metrics.map((m) => {
           const pct =
             m.targetValue && m.targetValue > 0
@@ -198,44 +146,27 @@ export function LeadMetricsPanel({
 
           return (
             <div key={m.id}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  marginBottom: 4,
-                }}
-              >
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{m.name}</span>
-                <span style={{ fontSize: 13, color: "#374151" }}>
-                  {m.currentValue}
-                  {m.unit ? ` ${m.unit}` : ""}
+              <div className="flex items-baseline justify-between mb-1">
+                <span className="text-sm font-medium text-[#fafafa]">{m.name}</span>
+                <span className="text-sm text-[#a1a1aa]">
+                  {m.currentValue}{m.unit ? ` ${m.unit}` : ""}
                   {m.targetValue ? ` / ${m.targetValue}` : ""}
                 </span>
               </div>
 
               {pct !== null && (
-                <div
-                  style={{
-                    height: 5,
-                    background: "#f3f4f6",
-                    borderRadius: 99,
-                    marginBottom: 8,
-                    overflow: "hidden",
-                  }}
-                >
+                <div className="h-1.5 rounded-full bg-[#27272a] mb-2 overflow-hidden">
                   <div
+                    className="h-full rounded-full transition-all duration-300"
                     style={{
-                      height: "100%",
                       width: `${pct}%`,
-                      background: pct >= 70 ? "#34d399" : pct >= 40 ? "#fbbf24" : "#f87171",
-                      borderRadius: 99,
+                      background: pct >= 70 ? "#22c55e" : pct >= 40 ? "#f59e0b" : "#ef4444",
                     }}
                   />
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 6 }}>
+              <div className="flex gap-2">
                 <input
                   type="number"
                   min="0"
@@ -247,13 +178,7 @@ export function LeadMetricsPanel({
                       [m.id]: { ...ev, value: e.target.value },
                     }))
                   }
-                  style={{
-                    flex: 1,
-                    padding: "6px 8px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 6,
-                    fontSize: 12,
-                  }}
+                  className={inputClass + " flex-1"}
                 />
                 <input
                   placeholder="Note (optional)"
@@ -264,36 +189,22 @@ export function LeadMetricsPanel({
                       [m.id]: { ...ev, note: e.target.value },
                     }))
                   }
-                  style={{
-                    flex: 1,
-                    padding: "6px 8px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 6,
-                    fontSize: 12,
-                  }}
+                  className={inputClass + " flex-1"}
                 />
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleLogEntry(m.id)}
                   disabled={!ev.value}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#111827",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    opacity: ev.value ? 1 : 0.4,
-                  }}
+                  className="shrink-0"
                 >
                   Log
-                </button>
+                </Button>
               </div>
             </div>
           );
         })}
         {metrics.length === 0 && !adding && (
-          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
+          <p className="text-sm text-[#52525b]">
             No lead metrics yet. Add 1–3 measurable inputs that drive this goal.
           </p>
         )}

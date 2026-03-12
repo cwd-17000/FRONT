@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Milestone {
   id: string;
@@ -11,17 +13,10 @@ interface Milestone {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  PENDING: "#d1d5db",
-  IN_PROGRESS: "#60a5fa",
-  COMPLETED: "#34d399",
-  MISSED: "#f87171",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pending",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  MISSED: "Missed",
+  PENDING: "#52525b",
+  IN_PROGRESS: "#6366f1",
+  COMPLETED: "#22c55e",
+  MISSED: "#ef4444",
 };
 
 function formatDate(iso: string) {
@@ -31,6 +26,9 @@ function formatDate(iso: string) {
     year: "numeric",
   });
 }
+
+const inputClass =
+  "w-full h-9 rounded-lg border border-[#3f3f46] bg-[#09090b] px-3 text-sm text-[#fafafa] placeholder:text-[#52525b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
 export function MilestonesPanel({
   goalId,
@@ -82,172 +80,103 @@ export function MilestonesPanel({
   }
 
   return (
-    <section
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "16px 20px",
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+    <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-[#a1a1aa]">
           Milestones ({milestones.length})
         </h2>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setAdding((a) => !a)}
-          style={{
-            fontSize: 12,
-            padding: "4px 10px",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            background: "#fff",
-            cursor: "pointer",
-          }}
+          className="gap-1 text-xs"
         >
-          {adding ? "Cancel" : "+ Add"}
-        </button>
+          {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add</>}
+        </Button>
       </div>
 
       {adding && (
         <form
           onSubmit={handleAdd}
-          style={{
-            marginBottom: 14,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: "12px",
-            background: "#f9fafb",
-            borderRadius: 8,
-          }}
+          className="mb-4 flex flex-col gap-2 p-3 rounded-lg bg-[#09090b] border border-[#27272a]"
         >
           <input
             required
             placeholder="Milestone title"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            style={{
-              padding: "7px 10px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              fontSize: 13,
-            }}
+            className={inputClass}
           />
           <input
             placeholder="Description (optional)"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            style={{
-              padding: "7px 10px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              fontSize: 13,
-            }}
+            className={inputClass}
           />
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Due date</label>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-[#71717a] whitespace-nowrap">Due date</label>
             <input
               required
               type="date"
               value={form.dueDate}
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-              style={{
-                flex: 1,
-                padding: "7px 10px",
-                border: "1px solid #d1d5db",
-                borderRadius: 6,
-                fontSize: 13,
-              }}
+              className={inputClass + " flex-1"}
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              alignSelf: "flex-start",
-              padding: "6px 14px",
-              background: "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
+          <Button type="submit" size="sm" disabled={saving}>
             {saving ? "Saving…" : "Save milestone"}
-          </button>
+          </Button>
         </form>
       )}
 
-      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+      <ul className="flex flex-col gap-2">
         {milestones.map((m) => (
           <li
             key={m.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "8px 0",
-              borderBottom: "1px solid #f3f4f6",
-            }}
+            className="flex items-center gap-3 py-2 border-b border-[#27272a] last:border-0"
           >
             <span
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: STATUS_DOT[m.status],
-                flexShrink: 0,
-              }}
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ background: STATUS_DOT[m.status] }}
             />
-            <div style={{ flex: 1 }}>
+            <div className="flex-1 min-w-0">
               <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  textDecoration: m.status === "COMPLETED" ? "line-through" : undefined,
-                  color: m.status === "COMPLETED" ? "#9ca3af" : "#111827",
-                }}
+                className={[
+                  "text-sm font-medium",
+                  m.status === "COMPLETED" ? "line-through text-[#52525b]" : "text-[#fafafa]",
+                ].join(" ")}
               >
                 {m.title}
               </div>
               {m.description && (
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{m.description}</div>
+                <div className="text-xs text-[#71717a] mt-0.5 truncate">{m.description}</div>
               )}
             </div>
-            <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
-              {formatDate(m.dueDate)}
-            </span>
+            <span className="text-xs text-[#52525b] whitespace-nowrap">{formatDate(m.dueDate)}</span>
             {m.status === "PENDING" && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => markStatus(m.id, "IN_PROGRESS")}
-                title="Mark in progress"
-                style={{ fontSize: 11, border: "1px solid #d1d5db", borderRadius: 4, padding: "2px 6px", cursor: "pointer", background: "#fff" }}
+                className="text-xs shrink-0"
               >
                 Start
-              </button>
+              </Button>
             )}
             {m.status === "IN_PROGRESS" && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => markStatus(m.id, "COMPLETED")}
-                title="Mark complete"
-                style={{ fontSize: 11, border: "1px solid #34d399", borderRadius: 4, padding: "2px 6px", cursor: "pointer", background: "#f0fdf4", color: "#15803d" }}
+                className="text-xs shrink-0 text-[#22c55e] border-[#22c55e]/30 hover:border-[#22c55e]/60"
               >
                 ✓ Done
-              </button>
+              </Button>
             )}
           </li>
         ))}
         {milestones.length === 0 && !adding && (
-          <li style={{ fontSize: 13, color: "#9ca3af", padding: "8px 0" }}>
+          <li className="text-sm text-[#52525b] py-2">
             No milestones yet. Add time-bounded checkpoints to this goal.
           </li>
         )}

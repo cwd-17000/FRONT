@@ -2,14 +2,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function decodeJwtPayload(token: string) {
   try {
     const base64 = token.split(".")[1];
     const decoded = Buffer.from(base64, "base64url").toString("utf-8");
-    return JSON.parse(decoded) as {
-      activeOrgId: string | null;
-    };
+    return JSON.parse(decoded) as { activeOrgId: string | null };
   } catch {
     return null;
   }
@@ -18,7 +18,7 @@ function decodeJwtPayload(token: string) {
 interface CalendarEvent {
   id: string;
   title: string;
-  startDate: string; // ISO date string e.g. "2026-03-15T00:00:00.000Z"
+  startDate: string;
   initiativeName?: string;
 }
 
@@ -38,15 +38,11 @@ export default async function CalendarPage() {
 
   const res = await fetch(
     `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/calendar`,
-    {
-      headers: { cookie: `access_token=${token.value}` },
-      cache: "no-store",
-    }
+    { headers: { cookie: `access_token=${token.value}` }, cache: "no-store" }
   );
 
   const events: CalendarEvent[] = res.ok ? await res.json() : [];
 
-  // Group events by "YYYY-MM-DD" for O(1) lookup in the grid
   const eventsByDate: Record<string, CalendarEvent[]> = {};
   for (const event of (events ?? [])) {
     const key = (event.startDate ?? "").slice(0, 10);
@@ -54,68 +50,51 @@ export default async function CalendarPage() {
     eventsByDate[key].push(event);
   }
 
-  // Determine which month to show: earliest event month, or current month
   const today = new Date();
   const displayYear = today.getFullYear();
-  const displayMonth = today.getMonth(); // 0-indexed
+  const displayMonth = today.getMonth();
 
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1);
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
-  const startWeekday = firstDayOfMonth.getDay(); // 0 = Sun
+  const startWeekday = firstDayOfMonth.getDay();
 
-  // Build grid cells: leading empty slots + day numbers
   const gridCells: (number | null)[] = [
     ...Array(startWeekday).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  // Pad to complete last row
   while (gridCells.length % 7 !== 0) gridCells.push(null);
 
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div style={{ padding: 40, maxWidth: 900 }}>
+    <div className="p-6 max-w-5xl mx-auto space-y-5">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h1 style={{ margin: 0 }}>
-          {MONTH_NAMES[displayMonth]} {displayYear}
-        </h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#fafafa]">
+            {MONTH_NAMES[displayMonth]} {displayYear}
+          </h1>
+          <p className="mt-1 text-sm text-[#71717a]">Team calendar and milestones</p>
+        </div>
         <Link href="/dashboard/calendar/new">
-          <button style={{ padding: "10px 20px" }}>+ New Event</button>
+          <Button className="gap-1.5">
+            <Plus size={15} />
+            New Event
+          </Button>
         </Link>
       </div>
 
-      {/* Day-name header row */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: 1,
-        marginBottom: 1,
-      }}>
+      {/* Day-name header */}
+      <div className="grid grid-cols-7">
         {DAY_NAMES.map((d) => (
-          <div key={d} style={{
-            padding: "6px 0",
-            textAlign: "center",
-            fontSize: 12,
-            fontWeight: 600,
-            color: "#888",
-            textTransform: "uppercase",
-          }}>
+          <div key={d} className="py-2 text-center text-xs font-semibold text-[#71717a] uppercase tracking-wider">
             {d}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: 1,
-        background: "#e5e7eb",
-        border: "1px solid #e5e7eb",
-        borderRadius: 8,
-        overflow: "hidden",
-      }}>
+      <div className="grid grid-cols-7 gap-px bg-[#27272a] rounded-xl overflow-hidden border border-[#27272a]">
         {gridCells.map((day, idx) => {
           const dateKey = day
             ? `${displayYear}-${pad(displayMonth + 1)}-${pad(day)}`
@@ -127,50 +106,25 @@ export default async function CalendarPage() {
             displayYear === today.getFullYear();
 
           return (
-            <div key={idx} style={{
-              background: day ? "#fff" : "#f9fafb",
-              minHeight: 90,
-              padding: 8,
-              verticalAlign: "top",
-            }}>
+            <div
+              key={idx}
+              className={day ? "bg-[#18181b] min-h-[90px] p-2" : "bg-[#0f0f10] min-h-[90px]"}
+            >
               {day && (
                 <>
-                  <div style={{
-                    fontSize: 13,
-                    fontWeight: isToday ? 700 : 400,
-                    color: isToday ? "#2563eb" : "#333",
-                    marginBottom: 4,
-                  }}>
+                  <div className={
+                    isToday
+                      ? "w-6 h-6 flex items-center justify-center rounded-full bg-[#6366f1] text-white text-xs font-bold mb-1"
+                      : "text-xs text-[#71717a] mb-1 pl-0.5"
+                  }>
                     {day}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <div className="flex flex-col gap-0.5">
                     {dayEvents.map((event) => (
-                      <div key={event.id} style={{
-                        fontSize: 11,
-                        padding: "3px 6px",
-                        borderRadius: 4,
-                        background: "#f3f4f6",
-                        border: "1px solid #e5e7eb",
-                        overflow: "hidden",
-                      }}>
-                        <div style={{
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          color: "#111",
-                        }}>
-                          {event.title}
-                        </div>
+                      <div key={event.id} className="text-[10px] px-1.5 py-0.5 rounded bg-[#312e81] border border-[#6366f1]/20 overflow-hidden">
+                        <div className="font-medium text-[#818cf8] truncate">{event.title}</div>
                         {event.initiativeName && (
-                          <div style={{
-                            color: "#888",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}>
-                            {event.initiativeName}
-                          </div>
+                          <div className="text-[#71717a] truncate">{event.initiativeName}</div>
                         )}
                       </div>
                     ))}
@@ -182,19 +136,16 @@ export default async function CalendarPage() {
         })}
       </div>
 
-      {/* Events with no renderable date or overflow — list below empty state */}
       {(events ?? []).length === 0 && (
-        <div style={{ textAlign: "center", padding: "48px 0", color: "#666" }}>
-          <p>No events this month. Create your first calendar event to get started.</p>
+        <div className="text-center py-10 border-2 border-dashed border-[#27272a] rounded-xl">
+          <p className="text-sm text-[#71717a] mb-3">
+            No events this month. Create your first calendar event.
+          </p>
           <Link href="/dashboard/calendar/new">
-            <button style={{ marginTop: 16, padding: "10px 24px" }}>Create Event</button>
+            <Button className="gap-1.5"><Plus size={14} />Create Event</Button>
           </Link>
         </div>
       )}
-
-      <div style={{ marginTop: 32 }}>
-        <Link href="/dashboard">← Back to Dashboard</Link>
-      </div>
     </div>
   );
 }

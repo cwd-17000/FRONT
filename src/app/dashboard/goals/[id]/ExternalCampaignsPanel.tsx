@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface ExternalLink {
   id: string;
@@ -24,6 +27,9 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const SOURCE_SYSTEMS = Object.keys(SOURCE_LABELS);
+
+const inputClass =
+  "w-full h-9 rounded-lg border border-[#3f3f46] bg-[#09090b] px-3 text-sm text-[#fafafa] placeholder:text-[#52525b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
 export function ExternalCampaignsPanel({
   goalId,
@@ -132,68 +138,30 @@ export function ExternalCampaignsPanel({
   }
 
   return (
-    <section
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "16px 20px",
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+    <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-[#a1a1aa]">
           External Campaigns ({links.length})
         </h2>
-        <button
-          onClick={() => {
-            resetForm();
-            setEditingId(null);
-            setAdding((a) => !a);
-          }}
-          style={{
-            fontSize: 12,
-            padding: "4px 10px",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            background: "#fff",
-            cursor: "pointer",
-          }}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { resetForm(); setEditingId(null); setAdding((a) => !a); }}
+          className="gap-1 text-xs"
         >
-          {adding ? "Cancel" : "+ Link campaign"}
-        </button>
+          {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Link campaign</>}
+        </Button>
       </div>
 
       {adding && (
         <form
           onSubmit={handleSubmit}
-          style={{
-            marginBottom: 16,
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 8,
-            padding: "12px",
-            background: "#f9fafb",
-            borderRadius: 8,
-          }}
+          className="mb-4 grid grid-cols-2 gap-2 p-3 rounded-lg bg-[#09090b] border border-[#27272a]"
         >
           <select
             value={form.sourceSystem}
             onChange={(e) => setForm((f) => ({ ...f, sourceSystem: e.target.value }))}
-            style={{
-              gridColumn: "1 / -1",
-              padding: "7px 10px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              fontSize: 13,
-              background: "#fff",
-            }}
+            className={inputClass + " col-span-2 bg-[#09090b]"}
           >
             {SOURCE_SYSTEMS.map((s) => (
               <option key={s} value={s}>{SOURCE_LABELS[s]}</option>
@@ -205,34 +173,32 @@ export function ExternalCampaignsPanel({
             placeholder="Campaign name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
           <input
             required
-            placeholder="External ID (from source system)"
+            placeholder="External ID"
             value={form.externalId}
             onChange={(e) => setForm((f) => ({ ...f, externalId: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
-
           <input
             placeholder="Status (e.g. active)"
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
           <input
             placeholder="URL (optional deep-link)"
             value={form.url}
             onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
-
           <input
-            placeholder="Primary metric label (e.g. Leads)"
+            placeholder="Primary metric label"
             value={form.primaryMetricLabel}
             onChange={(e) => setForm((f) => ({ ...f, primaryMetricLabel: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
           <input
             type="number"
@@ -240,14 +206,13 @@ export function ExternalCampaignsPanel({
             placeholder="Primary metric value"
             value={form.primaryMetricValue}
             onChange={(e) => setForm((f) => ({ ...f, primaryMetricValue: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
-
           <input
-            placeholder="Secondary metric label (e.g. Clicks)"
+            placeholder="Secondary metric label"
             value={form.secondaryMetricLabel}
             onChange={(e) => setForm((f) => ({ ...f, secondaryMetricLabel: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
           <input
             type="number"
@@ -255,57 +220,27 @@ export function ExternalCampaignsPanel({
             placeholder="Secondary metric value"
             value={form.secondaryMetricValue}
             onChange={(e) => setForm((f) => ({ ...f, secondaryMetricValue: e.target.value }))}
-            style={{ padding: "7px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            className={inputClass}
           />
-
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              gridColumn: "1 / -1",
-              padding: "7px 14px",
-              background: "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
+          <Button type="submit" disabled={saving} className="col-span-2">
             {saving ? "Saving…" : editingId ? "Update link" : "Save link"}
-          </button>
+          </Button>
         </form>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {links.map((l) => (
           <div
             key={l.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "8px 0",
-              borderBottom: "1px solid #f3f4f6",
-              fontSize: 13,
-            }}
+            className="flex items-center gap-3 py-2 border-b border-[#27272a] last:border-0 text-sm"
           >
-            <span
-              style={{
-                fontSize: 11,
-                padding: "2px 8px",
-                background: "#f3f4f6",
-                borderRadius: 4,
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-              }}
-            >
+            <Badge variant="default" className="text-[10px] shrink-0">
               {SOURCE_LABELS[l.sourceSystem] ?? l.sourceSystem}
-            </span>
+            </Badge>
 
-            <span style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span className="font-medium flex-1 min-w-0 truncate text-[#fafafa]">
               {l.url ? (
-                <a href={l.url} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8" }}>
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-[#818cf8] hover:text-[#6366f1] transition-colors">
                   {l.name}
                 </a>
               ) : (
@@ -314,33 +249,31 @@ export function ExternalCampaignsPanel({
             </span>
 
             {l.primaryMetricLabel && (
-              <span style={{ fontSize: 12, color: "#374151", whiteSpace: "nowrap" }}>
-                {l.primaryMetricLabel}: <strong>{l.primaryMetricValue ?? "—"}</strong>
+              <span className="text-xs text-[#71717a] whitespace-nowrap">
+                {l.primaryMetricLabel}: <strong className="text-[#fafafa]">{l.primaryMetricValue ?? "—"}</strong>
               </span>
             )}
 
             {l.status && (
-              <span style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap" }}>
-                {l.status}
-              </span>
+              <span className="text-xs text-[#52525b] whitespace-nowrap">{l.status}</span>
             )}
 
             <button
               onClick={() => startEdit(l)}
-              style={{ fontSize: 11, border: "none", background: "none", cursor: "pointer", color: "#6b7280" }}
+              className="text-[#71717a] hover:text-[#fafafa] transition-colors"
             >
-              Edit
+              <Pencil size={13} />
             </button>
             <button
               onClick={() => handleDelete(l.id)}
-              style={{ fontSize: 11, border: "none", background: "none", cursor: "pointer", color: "#ef4444" }}
+              className="text-[#71717a] hover:text-[#ef4444] transition-colors"
             >
-              ×
+              <Trash2 size={13} />
             </button>
           </div>
         ))}
         {links.length === 0 && !adding && (
-          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
+          <p className="text-sm text-[#52525b]">
             No external campaigns linked. Connect HubSpot, Mailchimp, or custom sources.
           </p>
         )}
