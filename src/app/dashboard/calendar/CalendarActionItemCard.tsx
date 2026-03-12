@@ -11,6 +11,7 @@ export interface CalendarDisplayItem {
   kind: "EVENT" | "CADENCE" | "MILESTONE";
   cadenceId?: string;
   goalId?: string;
+  goalType?: string;
   milestoneId?: string;
   milestoneStatus?: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
 }
@@ -30,9 +31,14 @@ export function CalendarActionItemCard({
   orgId: string;
 }) {
   if (item.kind === "CADENCE" && item.cadenceId) {
+    const href =
+      item.goalType === "KEY_RESULT" && item.goalId
+        ? `/dashboard/goals/${item.goalId}/check-in`
+        : `/dashboard/cadence/${item.cadenceId}`;
+
     return (
       <Link
-        href={`/dashboard/cadence/${item.cadenceId}`}
+        href={href}
         className="text-[10px] px-1.5 py-0.5 rounded border overflow-hidden bg-[#052e16] border-[#22c55e]/30 block hover:border-[#22c55e]/60 transition-colors"
       >
         <div className="font-medium text-[#86efac] truncate">{item.title}</div>

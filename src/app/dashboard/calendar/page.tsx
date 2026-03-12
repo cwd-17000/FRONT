@@ -217,6 +217,8 @@ export default async function CalendarPage({
       subtitle: item.goal?.title,
       kind: "CADENCE" as const,
       cadenceId: item.id,
+      goalId: item.goal?.id,
+      goalType: item.goal?.type,
     }))
   );
 

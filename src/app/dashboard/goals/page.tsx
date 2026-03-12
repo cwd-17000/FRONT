@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import GoalsList from "./GoalsList";
+import UpcomingPanel, { type UpcomingMilestone, type UpcomingCadence } from "./UpcomingPanel";
 import { Button } from "@/components/ui/button";
 
 function decodeJwtPayload(token: string) {
@@ -18,6 +19,49 @@ function decodeJwtPayload(token: string) {
   }
 }
 
+interface GoalItem {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+}
+
+interface RitualItem {
+  id: string;
+  name: string;
+  recurrence: string;
+  nextOccurrence?: string;
+  goal?: { id: string; title: string; type?: string };
+}
+
+interface MilestoneItem {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
+}
+
+function getPrevOccurrence(recurrence: string, nextOcc: Date): Date | null {
+  switch (recurrence) {
+    case "WEEKLY":
+      return new Date(nextOcc.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case "BIWEEKLY":
+      return new Date(nextOcc.getTime() - 14 * 24 * 60 * 60 * 1000);
+    case "MONTHLY": {
+      const d = new Date(nextOcc);
+      d.setMonth(d.getMonth() - 1);
+      return d;
+    }
+    case "QUARTERLY": {
+      const d = new Date(nextOcc);
+      d.setMonth(d.getMonth() - 3);
+      return d;
+    }
+    default:
+      return null;
+  }
+}
+
 export default async function GoalsPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token");
@@ -28,15 +72,114 @@ export default async function GoalsPage() {
 
   const headers = { cookie: `access_token=${token.value}` };
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/goals`;
+  const orgBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
 
-  const [goalsRes, dashRes] = await Promise.all([
+  const [goalsRes, dashRes, ritualsRes] = await Promise.all([
     fetch(`${base}?limit=100`, { headers, cache: "no-store" }),
     fetch(`${base}/dashboard`, { headers, cache: "no-store" }),
+    fetch(`${orgBase}/rituals`, { headers, cache: "no-store" }),
   ]);
 
   const goalsData = goalsRes.ok ? await goalsRes.json() : { items: [] };
   const goals = goalsData.items ?? [];
   const dashboard = dashRes.ok ? await dashRes.json() : null;
+  const rituals: RitualItem[] = ritualsRes.ok ? await ritualsRes.json() : [];
+
+  // Fetch milestones for active objectives in parallel
+  const activeObjectives: GoalItem[] = (goals as GoalItem[]).filter(
+    (g) => g.type === "OBJECTIVE" && g.status === "ACTIVE"
+  );
+  const milestoneResponses = await Promise.all(
+    activeObjectives.map((g) =>
+      fetch(`${base}/${g.id}/milestones`, { headers, cache: "no-store" })
+    )
+  );
+  const allMilestones: UpcomingMilestone[] = (
+    await Promise.all(
+      milestoneResponses.map(async (res, i) => {
+        if (!res.ok) return [];
+        const data: MilestoneItem[] = await res.json();
+        const goal = activeObjectives[i];
+        return data.map((m) => ({ ...m, goalId: goal.id, goalTitle: goal.title }));
+      })
+    )
+  ).flat();
+
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Next upcoming milestone (soonest future, not already done)
+  const nextMilestone: UpcomingMilestone | null =
+    allMilestones
+      .filter(
+        (m) =>
+          new Date(m.dueDate) > now &&
+          m.status !== "COMPLETED" &&
+          m.status !== "MISSED"
+      )
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] ?? null;
+
+  // Past week milestones (due in last 7 days)
+  const pastWeekMilestones: UpcomingMilestone[] = allMilestones
+    .filter((m) => {
+      const due = new Date(m.dueDate);
+      return due >= sevenDaysAgo && due <= now;
+    })
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+  // Next upcoming cadence (soonest future nextOccurrence)
+  const upcomingCadences = rituals
+    .filter((r) => r.nextOccurrence)
+    .map((r) => {
+      const next = new Date(r.nextOccurrence!);
+      if (next > now) {
+        return {
+          id: r.id,
+          name: r.name,
+          occurrenceDate: r.nextOccurrence!,
+          goalId: r.goal?.id,
+          goalTitle: r.goal?.title,
+          goalType: r.goal?.type,
+          _ms: next.getTime(),
+        };
+      }
+      return null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => a._ms - b._ms);
+
+  const nextCadenceRaw = upcomingCadences[0];
+  const nextCadence: UpcomingCadence | null = nextCadenceRaw
+    ? {
+        id: nextCadenceRaw.id,
+        name: nextCadenceRaw.name,
+        occurrenceDate: nextCadenceRaw.occurrenceDate,
+        goalId: nextCadenceRaw.goalId,
+        goalTitle: nextCadenceRaw.goalTitle,
+        goalType: nextCadenceRaw.goalType,
+      }
+    : null;
+
+  // Past week cadences (previous occurrence within last 7 days)
+  const pastWeekCadences: UpcomingCadence[] = rituals
+    .filter((r) => r.nextOccurrence)
+    .flatMap((r) => {
+      const next = new Date(r.nextOccurrence!);
+      const prev = getPrevOccurrence(r.recurrence, next);
+      if (prev && prev >= sevenDaysAgo && prev <= now) {
+        return [
+          {
+            id: r.id,
+            name: r.name,
+            occurrenceDate: prev.toISOString(),
+            goalId: r.goal?.id,
+            goalTitle: r.goal?.title,
+            goalType: r.goal?.type,
+          },
+        ];
+      }
+      return [];
+    });
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -55,6 +198,14 @@ export default async function GoalsPage() {
           </Button>
         </Link>
       </div>
+
+      <UpcomingPanel
+        orgId={user.activeOrgId!}
+        nextMilestone={nextMilestone}
+        nextCadence={nextCadence}
+        pastWeekMilestones={pastWeekMilestones}
+        pastWeekCadences={pastWeekCadences}
+      />
 
       <GoalsList goals={goals} dashboard={dashboard} />
     </div>
