@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { MilestonesPanel } from "./MilestonesPanel";
+import { LeadMetricsPanel } from "./LeadMetricsPanel";
+import { ExternalCampaignsPanel } from "./ExternalCampaignsPanel";
+import { RitualsPanel } from "./RitualsPanel";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -166,6 +170,21 @@ export default async function GoalDetailPage({
   if (!goalRes.ok) redirect("/dashboard/goals");
 
   const goal: Goal = await goalRes.json();
+
+  // Fetch workspace data in parallel
+  const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
+  const [milestonesRes, leadMetricsRes, campaignsRes, ritualsRes] = await Promise.all([
+    fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
+    fetch(`${extBase}/goals/${id}/lead-metrics`, { headers, cache: "no-store" }),
+    fetch(`${extBase}/external-campaigns/by-goal/${id}`, { headers, cache: "no-store" }),
+    fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" }),
+  ]);
+  const [milestones, leadMetrics, externalCampaigns, rituals] = await Promise.all([
+    milestonesRes.ok ? milestonesRes.json() : [],
+    leadMetricsRes.ok ? leadMetricsRes.json() : [],
+    campaignsRes.ok ? campaignsRes.json() : [],
+    ritualsRes.ok ? ritualsRes.json() : [],
+  ]);
 
   const progress =
     goal.targetValue && goal.targetValue > 0
@@ -643,6 +662,42 @@ export default async function GoalDetailPage({
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Workspace panels ─────────────────────────────────────────────── */}
+      <div
+        style={{
+          marginTop: 8,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+          gap: 16,
+          marginBottom: 28,
+        }}
+      >
+        <MilestonesPanel
+          goalId={id}
+          orgId={user.activeOrgId!}
+          initialData={milestones}
+        />
+        <LeadMetricsPanel
+          goalId={id}
+          orgId={user.activeOrgId!}
+          initialData={leadMetrics}
+        />
+      </div>
+
+      <ExternalCampaignsPanel
+        goalId={id}
+        orgId={user.activeOrgId!}
+        initialData={externalCampaigns}
+      />
+
+      <div style={{ marginTop: 16, marginBottom: 28 }}>
+        <RitualsPanel
+          goalId={id}
+          orgId={user.activeOrgId!}
+          rituals={rituals}
+        />
       </div>
 
       <div style={{ marginTop: 8 }}>
