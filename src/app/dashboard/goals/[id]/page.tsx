@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MilestonesPanel } from "./MilestonesPanel";
-import { LeadMetricsPanel } from "./LeadMetricsPanel";
 import { ExternalCampaignsPanel } from "./ExternalCampaignsPanel";
 import { RitualsPanel } from "./RitualsPanel";
 
@@ -56,6 +55,8 @@ interface Goal {
   childGoals: {
     id: string;
     title: string;
+    description?: string;
+    unit?: string;
     type: string;
     status: string;
     currentValue: number;
@@ -91,6 +92,13 @@ const STATUS_VARIANT: Record<string, "default" | "success" | "info" | "warning" 
   ACTIVE: "info",
   COMPLETED: "success",
   CANCELLED: "danger",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  ACTIVE: "Active",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
 };
 
 function confidenceColor(score: number) {
@@ -177,15 +185,13 @@ export default async function GoalDetailPage({
   const goal: Goal = await goalRes.json();
 
   const extBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
-  const [milestonesRes, leadMetricsRes, campaignsRes, ritualsRes] = await Promise.all([
+  const [milestonesRes, campaignsRes, ritualsRes] = await Promise.all([
     fetch(`${extBase}/goals/${id}/milestones`, { headers, cache: "no-store" }),
-    fetch(`${extBase}/goals/${id}/lead-metrics`, { headers, cache: "no-store" }),
     fetch(`${extBase}/external-campaigns/by-goal/${id}`, { headers, cache: "no-store" }),
     fetch(`${extBase}/rituals/by-goal/${id}`, { headers, cache: "no-store" }),
   ]);
-  const [milestones, leadMetrics, externalCampaigns, rituals] = await Promise.all([
+  const [milestones, externalCampaigns, rituals] = await Promise.all([
     milestonesRes.ok ? milestonesRes.json() : [],
-    leadMetricsRes.ok ? leadMetricsRes.json() : [],
     campaignsRes.ok ? campaignsRes.json() : [],
     ritualsRes.ok ? ritualsRes.json() : [],
   ]);
@@ -195,6 +201,9 @@ export default async function GoalDetailPage({
       ? Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100))
       : 0;
 
+  const isObjective = goal.type === "OBJECTIVE";
+  const isKeyResult = goal.type === "KEY_RESULT";
+
   const daysSinceCheckIn =
     goal.checkIns.length > 0
       ? Math.floor(
@@ -203,7 +212,7 @@ export default async function GoalDetailPage({
       : null;
 
   const isDueForCheckIn =
-    goal.type === "KEY_RESULT" &&
+    isKeyResult &&
     goal.status === "ACTIVE" &&
     (daysSinceCheckIn === null || daysSinceCheckIn >= 7);
 
@@ -245,7 +254,15 @@ export default async function GoalDetailPage({
           )}
         </div>
 
-        {goal.type === "KEY_RESULT" && goal.status === "ACTIVE" && (
+        {isObjective && goal.status === "ACTIVE" && (
+          <Link href={`/dashboard/goals/${id}/add-key-result`}>
+            <Button className="gap-1.5 shrink-0">
+              <Plus size={14} /> Add Key Result
+            </Button>
+          </Link>
+        )}
+
+        {isKeyResult && goal.status === "ACTIVE" && (
           <Link href={`/dashboard/goals/${id}/check-in`}>
             <Button className="gap-1.5 shrink-0">
               <Plus size={14} /> Check In
@@ -254,205 +271,278 @@ export default async function GoalDetailPage({
         )}
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-[#71717a] mb-1">Confidence</p>
-            <p className="text-2xl font-bold" style={{ color: confidenceColor(goal.confidenceScore) }}>
-              {goal.confidenceScore}%
-            </p>
-          </CardContent>
-        </Card>
-
-        {goal.targetValue !== undefined && (
+      {isObjective ? (
+        <>
           <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-[#71717a] mb-1">Progress</p>
-              <p className="text-2xl font-bold text-[#fafafa]">{progress}%</p>
-              <p className="text-xs text-[#71717a]">
-                {goal.currentValue}{goal.unit ? ` ${goal.unit}` : ""} / {goal.targetValue}
-              </p>
+            <CardContent className="p-5">
+              <h2 className="text-sm font-semibold text-[#a1a1aa] mb-4">Objective Summary</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-[#71717a] mb-1">Title</dt>
+                  <dd className="text-[#fafafa] font-medium">{goal.title}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#71717a] mb-1">Timeframe</dt>
+                  <dd className="text-[#fafafa] font-medium">{goal.timeframe}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#71717a] mb-1">Owner</dt>
+                  <dd className="text-[#fafafa] font-medium">
+                    {goal.owner.firstName} {goal.owner.lastName}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[#71717a] mb-1">Parent objective</dt>
+                  <dd className="text-[#fafafa] font-medium">
+                    {goal.parentGoal ? (
+                      <Link href={`/dashboard/goals/${goal.parentGoal.id}`} className="text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
+                        {goal.parentGoal.title}
+                      </Link>
+                    ) : (
+                      "None"
+                    )}
+                  </dd>
+                </div>
+              </dl>
             </CardContent>
           </Card>
-        )}
 
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-[#71717a] mb-1">Owner</p>
-            <p className="text-sm font-semibold text-[#fafafa]">
-              {goal.owner.firstName} {goal.owner.lastName}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-[#71717a] mb-1">Due</p>
-            <p className="text-sm font-semibold text-[#fafafa]">{formatDate(goal.dueDate)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Progress bar */}
-      {goal.targetValue !== undefined && goal.targetValue > 0 && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex justify-between text-sm text-[#71717a]">
-              <span>Progress toward target</span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} color={confidenceColor(goal.confidenceScore)} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Parent goal */}
-      {goal.parentGoal && (
-        <div>
-          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-2">Parent Goal</h2>
-          <Link href={`/dashboard/goals/${goal.parentGoal.id}`}>
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#3f3f46] bg-[#18181b] hover:border-[#6366f1]/50 transition-colors text-sm">
-              <span
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: (CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a") + "18",
-                  color: CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a",
-                }}
-              >
-                {TYPE_LABELS[goal.parentGoal.type] ?? goal.parentGoal.type}
-              </span>
-              <span className="font-medium text-[#fafafa]">{goal.parentGoal.title}</span>
-              <span className="text-[#71717a]">↗</span>
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* Child goals / Key Results */}
-      {goal.childGoals.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
-            {goal.type === "OBJECTIVE" ? "Key Results" : "Sub-goals"} ({goal.childGoals.length})
-          </h2>
-          <div className="flex flex-col gap-2">
-            {goal.childGoals.map((kr) => {
-              const krPct =
-                kr.targetValue && kr.targetValue > 0
-                  ? Math.min(100, Math.round((kr.currentValue / kr.targetValue) * 100))
-                  : 0;
-              return (
-                <Link key={kr.id} href={`/dashboard/goals/${kr.id}`}>
-                  <Card hover>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#fafafa] mb-2">{kr.title}</p>
-                        {kr.targetValue !== undefined && (
-                          <Progress value={krPct} color={confidenceColor(kr.confidenceScore)} size="xs" />
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold" style={{ color: confidenceColor(kr.confidenceScore) }}>
-                          {kr.confidenceScore}%
-                        </p>
-                        <p className="text-xs text-[#71717a]">
-                          {kr.owner.firstName} {kr.owner.lastName}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">Next Steps</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Link href={`/dashboard/goals/${id}/add-key-result`}>
+                  <div className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                    Add Key Results
+                  </div>
                 </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Progress chart */}
-      {goal.checkIns.length >= 2 && (
-        <Card>
-          <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-[#a1a1aa] mb-4">Progress Over Time</h2>
-            <ProgressChart checkIns={goal.checkIns} unit={goal.unit} />
-            <div className="flex gap-4 mt-3 text-xs text-[#71717a]">
-              <span><span style={{ color: "#22c55e" }}>●</span> On Track</span>
-              <span><span style={{ color: "#f59e0b" }}>●</span> At Risk</span>
-              <span><span style={{ color: "#ef4444" }}>●</span> Off Track</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Check-in history */}
-      {goal.checkIns.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
-            Check-in History ({goal._count.checkIns})
-          </h2>
-          <div className="flex flex-col gap-2">
-            {goal.checkIns.map((ci) => (
-              <div
-                key={ci.id}
-                className="rounded-lg border border-[#27272a] bg-[#18181b] p-4"
-                style={{ borderLeftWidth: 3, borderLeftColor: ragColor(ci.statusColor) }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-[#fafafa]">
-                      {ci.progress}{goal.unit ? ` ${goal.unit}` : ""}
-                    </span>
-                    <span className="text-sm font-bold" style={{ color: confidenceColor(ci.confidenceScore) }}>
-                      {ci.confidenceScore}% confidence
-                    </span>
-                  </div>
-                  <span className="text-xs text-[#71717a]">
-                    {ci.author.firstName} {ci.author.lastName} · {formatDate(ci.createdAt)}
-                  </span>
-                </div>
-                {ci.note && (
-                  <p className="text-sm text-[#a1a1aa] mt-1">{ci.note}</p>
-                )}
+                <a href="#milestones" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                  Add milestones
+                </a>
+                <a href="#rituals" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                  Schedule rituals
+                </a>
+                <a href="#campaigns" className="rounded-lg border border-[#3f3f46] hover:border-[#6366f1]/50 transition-colors p-3 text-sm text-[#fafafa]">
+                  Link campaigns / external efforts
+                </a>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </CardContent>
+          </Card>
 
-      {/* Comments */}
-      <div>
-        <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
-          Comments ({goal._count.comments})
-        </h2>
-        {goal.comments.length === 0 ? (
-          <p className="text-sm text-[#52525b]">No comments yet.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {goal.comments.map((comment) => (
-              <Card key={comment.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-[#fafafa]">
-                      {comment.author.firstName} {comment.author.lastName}
-                    </span>
-                    <span className="text-xs text-[#71717a]">{formatDate(comment.createdAt)}</span>
-                  </div>
-                  <p className="text-sm text-[#a1a1aa]">{comment.body}</p>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-[#a1a1aa]">Key Results ({goal.childGoals.length})</h2>
+              <Link href={`/dashboard/goals/${id}/add-key-result`}>
+                <Button size="sm" className="gap-1.5">
+                  <Plus size={14} /> Add Key Result
+                </Button>
+              </Link>
+            </div>
+
+            {goal.childGoals.length === 0 ? (
+              <Card>
+                <CardContent className="p-4 text-sm text-[#71717a]">
+                  No key results yet. Add 2–4 key results to define how this objective will be measured.
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              <div className="flex flex-col gap-2">
+                {goal.childGoals.map((kr) => (
+                  <Link key={kr.id} href={`/dashboard/goals/${kr.id}`}>
+                    <Card hover>
+                      <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-6 gap-3 text-sm">
+                        <div className="sm:col-span-2 min-w-0">
+                          <p className="text-xs text-[#71717a] mb-1">Title</p>
+                          <p className="text-[#fafafa] font-medium truncate">{kr.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#71717a] mb-1">Metric</p>
+                          <p className="text-[#fafafa]">{kr.description || kr.unit || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#71717a] mb-1">Baseline</p>
+                          <p className="text-[#fafafa]">—</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#71717a] mb-1">Target</p>
+                          <p className="text-[#fafafa]">{kr.targetValue ?? "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#71717a] mb-1">Current / Status</p>
+                          <p className="text-[#fafafa]">
+                            {kr.currentValue}
+                            {kr.unit ? ` ${kr.unit}` : ""}
+                            <span className="text-[#71717a]"> · {STATUS_LABELS[kr.status] ?? kr.status}</span>
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Workspace panels */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
-        <LeadMetricsPanel goalId={id} orgId={user.activeOrgId!} initialData={leadMetrics} />
-      </div>
+          <div id="milestones" className="scroll-mt-24">
+            <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
+          </div>
 
-      <ExternalCampaignsPanel goalId={id} orgId={user.activeOrgId!} initialData={externalCampaigns} />
+          <div id="rituals" className="scroll-mt-24">
+            <RitualsPanel goalId={id} orgId={user.activeOrgId!} rituals={rituals} />
+          </div>
 
-      <RitualsPanel goalId={id} orgId={user.activeOrgId!} rituals={rituals} />
+          <div id="campaigns" className="scroll-mt-24">
+            <ExternalCampaignsPanel goalId={id} orgId={user.activeOrgId!} initialData={externalCampaigns} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-[#71717a] mb-1">Confidence</p>
+                <p className="text-2xl font-bold" style={{ color: confidenceColor(goal.confidenceScore) }}>
+                  {goal.confidenceScore}%
+                </p>
+              </CardContent>
+            </Card>
+
+            {goal.targetValue !== undefined && (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-[#71717a] mb-1">Progress</p>
+                  <p className="text-2xl font-bold text-[#fafafa]">{progress}%</p>
+                  <p className="text-xs text-[#71717a]">
+                    {goal.currentValue}{goal.unit ? ` ${goal.unit}` : ""} / {goal.targetValue}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-[#71717a] mb-1">Owner</p>
+                <p className="text-sm font-semibold text-[#fafafa]">
+                  {goal.owner.firstName} {goal.owner.lastName}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-[#71717a] mb-1">Due</p>
+                <p className="text-sm font-semibold text-[#fafafa]">{formatDate(goal.dueDate)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {goal.targetValue !== undefined && goal.targetValue > 0 && (
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between text-sm text-[#71717a]">
+                  <span>Progress toward target</span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} color={confidenceColor(goal.confidenceScore)} />
+              </CardContent>
+            </Card>
+          )}
+
+          {goal.parentGoal && (
+            <div>
+              <h2 className="text-sm font-semibold text-[#a1a1aa] mb-2">Parent Goal</h2>
+              <Link href={`/dashboard/goals/${goal.parentGoal.id}`}>
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#3f3f46] bg-[#18181b] hover:border-[#6366f1]/50 transition-colors text-sm">
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: (CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a") + "18",
+                      color: CATEGORY_COLORS[goal.parentGoal.category] ?? "#71717a",
+                    }}
+                  >
+                    {TYPE_LABELS[goal.parentGoal.type] ?? goal.parentGoal.type}
+                  </span>
+                  <span className="font-medium text-[#fafafa]">{goal.parentGoal.title}</span>
+                  <span className="text-[#71717a]">↗</span>
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {goal.checkIns.length >= 2 && (
+            <Card>
+              <CardContent className="p-5">
+                <h2 className="text-sm font-semibold text-[#a1a1aa] mb-4">Progress Over Time</h2>
+                <ProgressChart checkIns={goal.checkIns} unit={goal.unit} />
+                <div className="flex gap-4 mt-3 text-xs text-[#71717a]">
+                  <span><span style={{ color: "#22c55e" }}>●</span> On Track</span>
+                  <span><span style={{ color: "#f59e0b" }}>●</span> At Risk</span>
+                  <span><span style={{ color: "#ef4444" }}>●</span> Off Track</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {goal.checkIns.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
+                Check-in History ({goal._count.checkIns})
+              </h2>
+              <div className="flex flex-col gap-2">
+                {goal.checkIns.map((ci) => (
+                  <div
+                    key={ci.id}
+                    className="rounded-lg border border-[#27272a] bg-[#18181b] p-4"
+                    style={{ borderLeftWidth: 3, borderLeftColor: ragColor(ci.statusColor) }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-[#fafafa]">
+                          {ci.progress}{goal.unit ? ` ${goal.unit}` : ""}
+                        </span>
+                        <span className="text-sm font-bold" style={{ color: confidenceColor(ci.confidenceScore) }}>
+                          {ci.confidenceScore}% confidence
+                        </span>
+                      </div>
+                      <span className="text-xs text-[#71717a]">
+                        {ci.author.firstName} {ci.author.lastName} · {formatDate(ci.createdAt)}
+                      </span>
+                    </div>
+                    {ci.note && (
+                      <p className="text-sm text-[#a1a1aa] mt-1">{ci.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h2 className="text-sm font-semibold text-[#a1a1aa] mb-3">
+              Comments ({goal._count.comments})
+            </h2>
+            {goal.comments.length === 0 ? (
+              <p className="text-sm text-[#52525b]">No comments yet.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {goal.comments.map((comment) => (
+                  <Card key={comment.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-[#fafafa]">
+                          {comment.author.firstName} {comment.author.lastName}
+                        </span>
+                        <span className="text-xs text-[#71717a]">{formatDate(comment.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-[#a1a1aa]">{comment.body}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <Link href="/dashboard/goals" className="inline-flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#fafafa] transition-colors">
         <ArrowLeft size={14} /> Back to Goals

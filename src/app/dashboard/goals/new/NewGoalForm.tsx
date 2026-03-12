@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input";
 
 type GoalTimeframe = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
 
-interface ParentGoal {
-  id: string;
-  title: string;
-  type: string;
-  timeframe: string;
-}
-
 interface Member {
   userId: string;
   name: string;
@@ -22,7 +15,6 @@ interface Member {
 
 interface Props {
   activeOrgId: string;
-  parentGoals: ParentGoal[];
   members: Member[];
 }
 
@@ -36,7 +28,7 @@ const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
 const selectClass =
   "w-full h-10 rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors";
 
-export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props) {
+export default function NewGoalForm({ activeOrgId, members }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,9 +36,6 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
   const [title, setTitle] = useState("");
   const [timeframe, setTimeframe] = useState<GoalTimeframe | "">("");
   const [ownerId, setOwnerId] = useState("");
-  const [parentGoalId, setParentGoalId] = useState("");
-
-  const objectives = parentGoals.filter((g) => g.type === "OBJECTIVE");
 
   const canSubmit = title.trim().length > 0 && timeframe !== "";
 
@@ -64,7 +53,6 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
         status: "ACTIVE",
       };
       if (ownerId) body.ownerId = ownerId;
-      if (parentGoalId) body.parentGoalId = parentGoalId;
 
       const res = await fetch(`/api/organizations/${activeOrgId}/goals`, {
         method: "POST",
@@ -150,26 +138,6 @@ export default function NewGoalForm({ activeOrgId, parentGoals, members }: Props
             </div>
           )}
 
-          {/* Parent objective (optional) */}
-          {objectives.length > 0 && (
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#a1a1aa]">
-                Parent Objective <span className="text-[#52525b]">(optional)</span>
-              </label>
-              <select
-                value={parentGoalId}
-                onChange={(e) => setParentGoalId(e.target.value)}
-                className={selectClass}
-              >
-                <option value="">— None —</option>
-                {objectives.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.title} ({g.timeframe})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         {error && (
