@@ -13,12 +13,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",               icon: LayoutDashboard },
   { label: "Goals",           href: "/dashboard/goals",         icon: Target },
+  { label: "Reporting",       href: "/dashboard/reporting",     icon: BarChart2 },
   { label: "Calendar",        href: "/dashboard/calendar",      icon: Calendar },
   { label: "Process Flows",   href: "/dashboard/process-flows", icon: GitBranch },
   { label: "Cadence",         href: "/dashboard/cadence",       icon: RefreshCw },
