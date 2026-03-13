@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Archive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { RenewGoalModal } from "./RenewGoalModal";
 
 interface Goal {
   id: string;
@@ -96,6 +97,7 @@ export function EditGoalForm({ goal, orgId, teams, members, objectives }: Props)
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRenewModal, setShowRenewModal] = useState(false);
 
   const [archiveStep, setArchiveStep] = useState<ArchiveStep>("idle");
   const [archiving, setArchiving] = useState(false);
@@ -132,6 +134,11 @@ export function EditGoalForm({ goal, orgId, teams, members, objectives }: Props)
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.message ?? "Failed to save changes.");
+        return;
+      }
+
+      if (status === "COMPLETED") {
+        setShowRenewModal(true);
         return;
       }
 
@@ -173,6 +180,28 @@ export function EditGoalForm({ goal, orgId, teams, members, objectives }: Props)
   const isArchived = goal.status === "ARCHIVED";
 
   return (
+    <>
+    {showRenewModal && (
+      <RenewGoalModal
+        goal={{
+          id: goal.id,
+          title: goal.title,
+          description: goal.description,
+          category,
+          visibility,
+          timeframe,
+          type: goal.type,
+          ownerId,
+          teamId: teamId || null,
+        }}
+        orgId={orgId}
+        onDismiss={() => {
+          setShowRenewModal(false);
+          router.push(`/dashboard/goals/${goal.id}`);
+          router.refresh();
+        }}
+      />
+    )}
     <form onSubmit={handleSave} className="space-y-5">
       {/* Core fields */}
       <Card>
@@ -464,5 +493,6 @@ export function EditGoalForm({ goal, orgId, teams, members, objectives }: Props)
         </div>
       </div>
     </form>
+    </>
   );
 }
