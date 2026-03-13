@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavigationLoadingIndicator from "@/components/layout/NavigationLoadingIndicator";
@@ -28,7 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NavigationLoadingIndicator />
+        <Suspense fallback={null}>
+          <NavigationLoadingIndicator />
+        </Suspense>
         {children}
       </body>
     </html>
