@@ -6,7 +6,6 @@ import {
   Target,
   ArrowRight,
   Calendar,
-  GitBranch,
   RefreshCw,
   Building2,
 } from "lucide-react";
@@ -42,7 +41,6 @@ async function getMyOrgs(token: string) {
 const QUICK_LINKS = [
   { label: "Goals",          href: "/dashboard/goals",           icon: Target,     desc: "Track OKRs & key results" },
   { label: "Calendar",       href: "/dashboard/calendar",        icon: Calendar,   desc: "Events & milestones" },
-  { label: "Process Flows",  href: "/dashboard/process-flows",   icon: GitBranch,  desc: "Workflows & SOPs" },
   { label: "Cadence",        href: "/dashboard/cadence",         icon: RefreshCw,  desc: "Recurring cadences" },
   { label: "My Organization",href: "/dashboard/my-organization", icon: Building2,  desc: "Members, teams & org chart" },
 ];

@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { AlertCircle, ArrowRight, UserCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function ProfileSetupPage() {
   const router = useRouter();
@@ -62,111 +67,75 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "#f9fafb",
-      padding: 24,
-    }}>
-      <div style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: 40,
-        width: "100%",
-        maxWidth: 440,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-      }}>
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Set up your profile</h1>
-          <p style={{ margin: "8px 0 0", fontSize: 14, color: "#6b7280" }}>
-            Help your teammates know who you are.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#09090b] p-4 sm:p-6 flex items-center justify-center">
+      <Card className="w-full max-w-lg">
+        <CardContent className="p-6 space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#27272a]">
+              <UserCircle2 size={16} className="text-[#a1a1aa]" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-[#fafafa]">Set up your profile</h1>
+              <p className="text-xs text-[#71717a]">Step 2 of 2 · Introduce yourself</p>
+            </div>
+          </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
-                First name <span style={{ color: "#dc2626" }}>*</span>
-              </label>
-              <input
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="First name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Jane"
                 required
-                style={{ width: "100%", padding: "10px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", boxSizing: "border-box" }}
               />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
-                Last name <span style={{ color: "#dc2626" }}>*</span>
-              </label>
-              <input
+              <Input
+                label="Last name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Smith"
                 required
-                style={{ width: "100%", padding: "10px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", boxSizing: "border-box" }}
               />
             </div>
-          </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
-              Job title
-            </label>
-            <input
+            <Input
+              label="Job title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Head of Marketing"
-              style={{ width: "100%", padding: "10px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #d1d5db", boxSizing: "border-box" }}
             />
-            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-              This is visible to your team.
-            </p>
-          </div>
 
-          {error && (
-            <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{error}</p>
-          )}
+            <p className="text-xs text-[#71717a] -mt-2">This is visible to your organization members.</p>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              padding: "11px 0",
-              fontSize: 15,
-              fontWeight: 600,
-              background: submitting ? "#9ca3af" : "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              cursor: submitting ? "not-allowed" : "pointer",
-              marginTop: 4,
-            }}
-          >
-            {submitting ? "Saving..." : "Continue to Dashboard →"}
-          </button>
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/10 px-3 py-2.5">
+                <AlertCircle size={14} className="text-[#ef4444] mt-0.5 shrink-0" />
+                <p className="text-sm text-[#ef4444]">{error}</p>
+              </div>
+            )}
 
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#9ca3af",
-              fontSize: 13,
-              cursor: "pointer",
-              textAlign: "center",
-              padding: 0,
-            }}
-          >
-            Skip for now
-          </button>
-        </form>
-      </div>
+            <Button type="submit" disabled={submitting} className="w-full gap-1.5">
+              {submitting ? "Saving..." : "Continue to dashboard"}
+              {!submitting && <ArrowRight size={14} />}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="w-full text-xs text-[#71717a] hover:text-[#a1a1aa] transition-colors"
+            >
+              Skip for now
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-[#71717a]">
+            Need to switch flow?{" "}
+            <Link href="/onboarding" className="text-[#818cf8] hover:text-[#a5b4fc] transition-colors">
+              Back to onboarding options
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
