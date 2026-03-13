@@ -266,6 +266,12 @@ export default function GoalsList({ goals, dashboard, teams, archived = false }:
   const [selectedTeamId, setSelectedTeamId] = useState<string>("all");
 
   const objectives = goals.filter((g) => g.type === "OBJECTIVE");
+  const currentObjectivesCount = goals.filter(
+    (g) => g.type === "OBJECTIVE" && g.status === "ACTIVE"
+  ).length;
+  const currentKeyResultsCount = goals.filter(
+    (g) => g.type === "KEY_RESULT" && g.status === "ACTIVE"
+  ).length;
   const krsByParent = new Map<string, Goal[]>();
   goals
     .filter((g) => g.type === "KEY_RESULT" && g.parentGoalId)
@@ -288,11 +294,18 @@ export default function GoalsList({ goals, dashboard, teams, archived = false }:
     <div className="space-y-6">
       {/* Org health stats */}
       {dashboard && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <p className="text-3xl font-bold text-[#fafafa]">{dashboard.activeGoals}</p>
-              <p className="text-sm text-[#71717a] mt-1">Active Objectives</p>
+              <p className="text-3xl font-bold text-[#fafafa]">{currentObjectivesCount}</p>
+              <p className="text-sm text-[#71717a] mt-1">Current Objectives</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-3xl font-bold text-[#fafafa]">{currentKeyResultsCount}</p>
+              <p className="text-sm text-[#71717a] mt-1">Current Key Results</p>
             </CardContent>
           </Card>
 
