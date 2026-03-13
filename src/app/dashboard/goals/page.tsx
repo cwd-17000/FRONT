@@ -223,12 +223,37 @@ export default async function GoalsPage({
           </p>
         </div>
         {activeTab === "active" && (
-          <Link href="/dashboard/goals/new">
-            <Button className="gap-1.5 shrink-0">
-              <Plus size={15} />
-              New Goal
-            </Button>
-          </Link>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Link
+              href="/dashboard/goals/import"
+              style={{
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 7,
+                border: "1px solid #27272a",
+                background: "transparent",
+                color: "#a1a1aa",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Import
+            </Link>
+            <Link href="/dashboard/goals/new">
+              <Button className="gap-1.5 shrink-0">
+                <Plus size={15} />
+                New Goal
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
