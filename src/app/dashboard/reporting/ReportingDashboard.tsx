@@ -13,6 +13,7 @@ import ObjectiveStatusChart from "@/components/reporting/charts/ObjectiveStatusC
 import ProgressOverTimeChart from "@/components/reporting/charts/ProgressOverTimeChart";
 import TeamComparisonChart from "@/components/reporting/charts/TeamComparisonChart";
 import ObjectiveDetailDrawer from "@/components/reporting/ObjectiveDetailDrawer";
+import ExportReportButton from "@/components/reporting/ExportReportButton";
 
 // ── Timeframe helpers ────────────────────────────────────────────────────────
 
@@ -244,6 +245,16 @@ export default function ReportingDashboard({ orgId, teams }: Props) {
             ))}
           </select>
         )}
+
+        {/* Export */}
+        <div style={{ marginLeft: "auto" }}>
+          <ExportReportButton
+            orgId={orgId}
+            from={filters.from}
+            to={filters.to}
+            teamId={filters.teamId}
+          />
+        </div>
       </div>
 
       {loading ? (
