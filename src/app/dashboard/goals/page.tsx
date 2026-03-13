@@ -32,6 +32,7 @@ interface RitualItem {
   recurrence: string;
   nextOccurrence?: string;
   goal?: { id: string; title: string; type?: string };
+  checkIns?: { occurredAt: string }[];
 }
 
 interface MilestoneItem {
@@ -192,6 +193,10 @@ export default async function GoalsPage({
       const next = new Date(r.nextOccurrence!);
       const prev = getPrevOccurrence(r.recurrence, next);
       if (prev && prev >= sevenDaysAgo && prev <= now) {
+        const lastCheckIn = r.checkIns?.[0];
+        const hasRecentCheckIn = lastCheckIn
+          ? new Date(lastCheckIn.occurredAt) >= prev
+          : false;
         return [
           {
             id: r.id,
@@ -200,6 +205,7 @@ export default async function GoalsPage({
             goalId: r.goal?.id,
             goalTitle: r.goal?.title,
             goalType: r.goal?.type,
+            hasRecentCheckIn,
           },
         ];
       }

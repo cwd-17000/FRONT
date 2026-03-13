@@ -45,7 +45,7 @@ interface Cadence {
   participantIds: string[];
   nextOccurrence?: string;
   owner: { id: string; firstName?: string; lastName?: string };
-  goal?: { id: string; title: string; unit?: string } | null;
+  goal?: { id: string; title: string; type?: string; unit?: string; currentValue?: number; targetValue?: number } | null;
   nextMilestone?: NextMilestone | null;
 }
 
@@ -141,7 +141,12 @@ export default async function CadenceDetailPage({
         participantIds={cadence.participantIds}
         ownerId={cadence.owner.id}
         nextMilestone={cadence.nextMilestone ?? null}
+        goalId={cadence.goal?.id}
+        goalType={cadence.goal?.type}
+        goalTitle={cadence.goal?.title}
         goalUnit={cadence.goal?.unit}
+        goalCurrentValue={cadence.goal?.currentValue}
+        goalTargetValue={cadence.goal?.targetValue}
       />
     </div>
   );

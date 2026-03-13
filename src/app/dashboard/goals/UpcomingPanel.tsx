@@ -19,6 +19,7 @@ export interface UpcomingCadence {
   goalId?: string;
   goalTitle?: string;
   goalType?: string;
+  hasRecentCheckIn?: boolean;
 }
 
 interface Props {
@@ -44,6 +45,16 @@ function formatDate(iso: string) {
 }
 
 function CadenceCheckInLink({ cadence }: { cadence: UpcomingCadence }) {
+  if (cadence.hasRecentCheckIn) {
+    return (
+      <Link
+        href={`/dashboard/cadence/${cadence.id}`}
+        className="text-xs text-[#22c55e] whitespace-nowrap shrink-0"
+      >
+        Done ✓
+      </Link>
+    );
+  }
   if (cadence.goalType === "KEY_RESULT" && cadence.goalId) {
     return (
       <Link

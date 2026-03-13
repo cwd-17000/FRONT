@@ -26,6 +26,51 @@ const TIMEFRAME_OPTIONS: { value: GoalTimeframe; label: string }[] = [
   { value: "WEEKLY", label: "Weekly" },
 ];
 
+/** Compute the default due date for a given timeframe (mirrors backend logic) */
+function computeDefaultDueDate(timeframe: GoalTimeframe): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const minMs = 30 * 24 * 60 * 60 * 1000;
+
+  if (timeframe === "ANNUAL") {
+    const thisYearEnd = new Date(year, 11, 31);
+    const ninetyDays = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const d = thisYearEnd > ninetyDays ? thisYearEnd : new Date(year + 1, 11, 31);
+    return d.toISOString().slice(0, 10);
+  }
+
+  if (timeframe === "QUARTERLY") {
+    const qem = Math.floor(month / 3) * 3 + 2;
+    const thisQEnd = new Date(year, qem + 1, 0);
+    if (thisQEnd.getTime() - now.getTime() > minMs) return thisQEnd.toISOString().slice(0, 10);
+    const nextQEM = qem + 3;
+    const nextQYear = nextQEM > 11 ? year + 1 : year;
+    return new Date(nextQYear, (nextQEM % 12) + 1, 0).toISOString().slice(0, 10);
+  }
+
+  if (timeframe === "MONTHLY") {
+    const thisMonthEnd = new Date(year, month + 1, 0);
+    if (thisMonthEnd.getTime() - now.getTime() > minMs) return thisMonthEnd.toISOString().slice(0, 10);
+    return new Date(year, month + 2, 0).toISOString().slice(0, 10);
+  }
+
+  // WEEKLY
+  const dayOfWeek = now.getDay();
+  const daysToSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+  const thisSunday = new Date(year, month, now.getDate() + daysToSunday);
+  const d = daysToSunday >= 2 ? thisSunday : new Date(thisSunday.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDisplayDate(iso: string): string {
+  return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 const CATEGORY_OPTIONS: { value: GoalCategory; label: string }[] = [
   { value: "FINANCIAL", label: "Financial" },
   { value: "CUSTOMER", label: "Customer" },
@@ -44,8 +89,16 @@ export default function NewGoalForm({ activeOrgId, teams }: Props) {
 
   const [title, setTitle] = useState("");
   const [timeframe, setTimeframe] = useState<GoalTimeframe | "">("");
+  const [dueDate, setDueDate] = useState("");
+  const [editingDate, setEditingDate] = useState(false);
   const [category, setCategory] = useState<GoalCategory>("FINANCIAL");
   const [teamId, setTeamId] = useState("");
+
+  function handleTimeframeSelect(tf: GoalTimeframe) {
+    setTimeframe(tf);
+    setDueDate(computeDefaultDueDate(tf));
+    setEditingDate(false);
+  }
 
   const canSubmit = title.trim().length > 0 && timeframe !== "";
 
@@ -62,6 +115,7 @@ export default function NewGoalForm({ activeOrgId, teams }: Props) {
         category,
         timeframe,
         status: "ACTIVE",
+        ...(dueDate ? { dueDate } : {}),
       };
       if (teamId) body.teamId = teamId;
 
@@ -116,7 +170,7 @@ export default function NewGoalForm({ activeOrgId, teams }: Props) {
                 <button
                   key={tf.value}
                   type="button"
-                  onClick={() => setTimeframe(tf.value)}
+                  onClick={() => handleTimeframeSelect(tf.value)}
                   className={[
                     "flex-1 py-2 px-1 rounded-lg border-2 text-sm font-medium transition-all duration-150",
                     timeframe === tf.value
@@ -128,6 +182,46 @@ export default function NewGoalForm({ activeOrgId, teams }: Props) {
                 </button>
               ))}
             </div>
+
+            {/* Target date banner — shown after timeframe is selected */}
+            {timeframe && dueDate && (
+              <div className="mt-3 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/10 px-4 py-3">
+                {!editingDate ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-[#a5b4fc]">
+                      This goal is scheduled to be hit by{" "}
+                      <span className="font-bold text-[#fafafa]">{formatDisplayDate(dueDate)}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEditingDate(true)}
+                      className="text-xs text-[#818cf8] hover:text-[#a5b4fc] whitespace-nowrap transition-colors"
+                    >
+                      Edit date
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-[#a5b4fc]">Choose target date</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="h-9 rounded-lg border border-[#6366f1]/40 bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditingDate(false)}
+                        className="text-xs text-[#818cf8] hover:text-[#a5b4fc] transition-colors"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Category */}

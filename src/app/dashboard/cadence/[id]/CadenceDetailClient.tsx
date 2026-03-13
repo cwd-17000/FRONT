@@ -26,6 +26,13 @@ const STATUS_CLASSES = {
   OFF_TRACK: "text-[#ef4444] border-[#ef4444]/30 bg-[#ef4444]/10",
 } as const;
 
+// Maps cadence status to goal check-in RAG color
+const STATUS_TO_RAG: Record<string, "GREEN" | "YELLOW" | "RED"> = {
+  ON_TRACK: "GREEN",
+  AT_RISK: "YELLOW",
+  OFF_TRACK: "RED",
+};
+
 type Status = keyof typeof STATUS_LABELS;
 
 function formatDate(iso: string) {
@@ -34,6 +41,12 @@ function formatDate(iso: string) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function confidenceColor(score: number) {
+  if (score < 40) return "#ef4444";
+  if (score <= 70) return "#f59e0b";
+  return "#22c55e";
 }
 
 interface NextMilestone {
@@ -51,7 +64,11 @@ export function CadenceDetailClient({
   participantIds,
   ownerId,
   nextMilestone,
+  goalId,
+  goalType,
   goalUnit,
+  goalCurrentValue,
+  goalTargetValue,
 }: {
   orgId: string;
   cadenceId: string;
@@ -60,8 +77,14 @@ export function CadenceDetailClient({
   participantIds: string[];
   ownerId: string;
   nextMilestone: NextMilestone | null;
+  goalId?: string;
+  goalType?: string;
+  goalTitle?: string;
   goalUnit?: string;
+  goalCurrentValue?: number;
+  goalTargetValue?: number;
 }) {
+  const isKeyResult = goalType === "KEY_RESULT";
   const [checkIns, setCheckIns] = useState(initialCheckIns);
   const [form, setForm] = useState({
     status: "ON_TRACK" as Status,
@@ -69,8 +92,15 @@ export function CadenceDetailClient({
     keyUpdates: "",
     blockers: "",
   });
+  const [progress, setProgress] = useState(String(goalCurrentValue ?? 0));
+  const [confidenceScore, setConfidenceScore] = useState("50");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const progressPct =
+    isKeyResult && goalTargetValue && goalTargetValue > 0
+      ? Math.min(100, Math.round((parseFloat(progress || "0") / goalTargetValue) * 100))
+      : null;
 
   const canCheckIn = currentUserId === ownerId || participantIds.includes(currentUserId);
 
@@ -80,7 +110,8 @@ export function CadenceDetailClient({
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/organizations/${orgId}/rituals/${cadenceId}/check-ins`, {
+      // Submit cadence check-in
+      const cadenceRes = await fetch(`/api/organizations/${orgId}/rituals/${cadenceId}/check-ins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -92,14 +123,36 @@ export function CadenceDetailClient({
         }),
       });
 
-      if (res.ok) {
-        const created = await res.json();
-        setCheckIns((prev) => [created, ...prev]);
-        setForm({ status: "ON_TRACK", summary: "", keyUpdates: "", blockers: "" });
-      } else {
-        const text = await res.text();
+      if (!cadenceRes.ok) {
+        const text = await cadenceRes.text();
         setError(text || "Failed to submit check-in.");
+        return;
       }
+
+      const created = await cadenceRes.json();
+
+      // Also post a goal check-in if linked to a KEY_RESULT
+      if (isKeyResult && goalId) {
+        const progressVal = parseFloat(progress);
+        if (!isNaN(progressVal)) {
+          await fetch(`/api/organizations/${orgId}/goals/${goalId}/check-ins`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              progress: progressVal,
+              confidenceScore: parseInt(confidenceScore, 10),
+              statusColor: STATUS_TO_RAG[form.status],
+              note: form.summary || undefined,
+            }),
+          });
+        }
+      }
+
+      setCheckIns((prev) => [created, ...prev]);
+      setForm({ status: "ON_TRACK", summary: "", keyUpdates: "", blockers: "" });
+      setProgress(String(goalCurrentValue ?? 0));
+      setConfidenceScore("50");
     } catch {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -138,6 +191,7 @@ export function CadenceDetailClient({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Status */}
             <div className="grid grid-cols-3 gap-2">
               {(["ON_TRACK", "AT_RISK", "OFF_TRACK"] as Status[]).map((status) => (
                 <button
@@ -155,6 +209,57 @@ export function CadenceDetailClient({
                 </button>
               ))}
             </div>
+
+            {/* Progress + confidence (only when linked to a KEY_RESULT) */}
+            {isKeyResult && (
+              <>
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-[#a1a1aa]">
+                    Current Progress{goalUnit ? ` (${goalUnit})` : ""}
+                  </label>
+                  <input
+                    type="number"
+                    value={progress}
+                    onChange={(e) => setProgress(e.target.value)}
+                    min="0"
+                    placeholder={String(goalCurrentValue ?? 0)}
+                    className="w-full h-10 rounded-lg border border-[#3f3f46] bg-[#27272a] px-3 text-sm text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 focus:border-[#6366f1] transition-colors"
+                  />
+                  {progressPct !== null && (
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs text-[#71717a] mb-1">
+                        <span>{parseFloat(progress) || 0}{goalUnit ? ` ${goalUnit}` : ""} / {goalTargetValue}{goalUnit ? ` ${goalUnit}` : ""}</span>
+                        <span>{progressPct}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#27272a] overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progressPct}%`, background: "#6366f1" }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-[#a1a1aa]">
+                    Confidence:{" "}
+                    <strong style={{ color: confidenceColor(parseInt(confidenceScore)) }}>
+                      {confidenceScore}%
+                    </strong>
+                  </label>
+                  <input
+                    type="range"
+                    value={confidenceScore}
+                    onChange={(e) => setConfidenceScore(e.target.value)}
+                    min="0"
+                    max="100"
+                    className="w-full cursor-pointer accent-[#6366f1]"
+                  />
+                  <div className="flex justify-between text-xs text-[#52525b] mt-0.5">
+                    <span>Not confident</span>
+                    <span>Very confident</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             <textarea
               required

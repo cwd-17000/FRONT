@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { MilestoneStatusActions } from "@/components/goals/MilestoneStatusActions";
+import { MilestoneCalendarModal } from "./MilestoneCalendarModal";
 
 export interface CalendarDisplayItem {
   id: string;
@@ -16,12 +17,55 @@ export interface CalendarDisplayItem {
   milestoneStatus?: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
 }
 
-const MILESTONE_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pending",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Hit",
-  MISSED: "Missed",
+const MILESTONE_STATUS_COLORS: Record<string, string> = {
+  PENDING: "#71717a",
+  IN_PROGRESS: "#6366f1",
+  COMPLETED: "#22c55e",
+  MISSED: "#ef4444",
 };
+
+function MilestoneCard({
+  item,
+  orgId,
+}: {
+  item: CalendarDisplayItem;
+  orgId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!item.goalId || !item.milestoneId) return null;
+
+  const statusColor = MILESTONE_STATUS_COLORS[item.milestoneStatus ?? "PENDING"];
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full text-left text-[10px] px-1.5 py-1 rounded border overflow-hidden bg-[#3f1d0d] border-[#f59e0b]/30 hover:border-[#f59e0b]/60 transition-colors"
+      >
+        <div className="flex items-center gap-1 mb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusColor }} />
+          <span className="font-medium text-[#fdba74] truncate">{item.title}</span>
+        </div>
+        {item.subtitle && <div className="text-[#71717a] truncate">{item.subtitle}</div>}
+        <div className="text-[#f59e0b]/60 mt-0.5">Tap to review →</div>
+      </button>
+
+      {open && (
+        <MilestoneCalendarModal
+          orgId={orgId}
+          goalId={item.goalId!}
+          milestoneId={item.milestoneId!}
+          milestoneTitle={item.title}
+          milestoneDueDate={item.startDate}
+          milestoneStatus={item.milestoneStatus ?? "PENDING"}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
 
 export function CalendarActionItemCard({
   item,
@@ -49,27 +93,7 @@ export function CalendarActionItemCard({
   }
 
   if (item.kind === "MILESTONE" && item.goalId && item.milestoneId) {
-    return (
-      <div className="text-[10px] px-1.5 py-1 rounded border overflow-hidden bg-[#3f1d0d] border-[#f59e0b]/30 space-y-1">
-        <div className="font-medium text-[#fdba74] truncate">{item.title}</div>
-        {item.subtitle && <div className="text-[#71717a] truncate">{item.subtitle}</div>}
-        <div className="flex items-center justify-between gap-1">
-          <Link href={`/dashboard/goals/${item.goalId}`} className="text-[#fbbf24] hover:text-[#fcd34d] truncate">
-            Open
-          </Link>
-          {(item.milestoneStatus === "PENDING" || item.milestoneStatus === "IN_PROGRESS") ? (
-            <MilestoneStatusActions
-              orgId={orgId}
-              goalId={item.goalId}
-              milestoneId={item.milestoneId}
-              compact
-            />
-          ) : (
-            <span className="text-[#fbbf24]">{MILESTONE_STATUS_LABELS[item.milestoneStatus ?? "PENDING"]}</span>
-          )}
-        </div>
-      </div>
-    );
+    return <MilestoneCard item={item} orgId={orgId} />;
   }
 
   return (
