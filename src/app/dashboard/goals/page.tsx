@@ -272,7 +272,9 @@ export default async function GoalsPage({
         />
       )}
 
-      <GoalsList goals={goals} dashboard={activeTab === "active" ? dashboard : null} teams={teams} archived={activeTab === "archived"} />
+      <div id="tour-objectives-list">
+        <GoalsList goals={goals} dashboard={activeTab === "active" ? dashboard : null} teams={teams} archived={activeTab === "archived"} />
+      </div>
     </div>
   );
 }

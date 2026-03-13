@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import OrgSwitcher from "./OrgSwitcher";
 import { MilestoneStatusActions } from "@/components/goals/MilestoneStatusActions";
+import DemoBanner from "@/components/dashboard/DemoBanner";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -49,6 +50,7 @@ const QUICK_LINKS = [
 interface GoalSummary {
   id: string;
   title: string;
+  demoMode?: boolean;
 }
 
 interface Milestone {
@@ -111,6 +113,18 @@ export default async function DashboardPage() {
   const goalsRes = await fetch(`${base}/goals?type=OBJECTIVE`, { headers, cache: "no-store" });
   const goals = goalsRes.ok ? asArray<GoalSummary>(await goalsRes.json()) : [];
   const goalCount = goals.length;
+  const hasDemoData = goals.some((goal) => goal.demoMode === true);
+
+  const [settingsRes, demoStatusRes] = await Promise.all([
+    fetch(`${base}/settings`, { headers, cache: "no-store" }),
+    fetch(`${base}/demo/status`, { headers, cache: "no-store" }),
+  ]);
+
+  const settings = settingsRes.ok ? await settingsRes.json() : null;
+  const demoStatus = demoStatusRes.ok ? await demoStatusRes.json() : null;
+
+  const enableDemo = settings?.enableDemo ?? demoStatus?.enableDemo ?? true;
+  const canLaunchDemo = demoStatus?.canLaunchDemo ?? (enableDemo && goalCount === 0);
 
   const [cadenceRes, milestoneResponses] = await Promise.all([
     fetch(`${base}/rituals`, { headers, cache: "no-store" }),
@@ -167,6 +181,14 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
+      <DemoBanner
+        orgId={user.activeOrgId!}
+        objectiveCount={goalCount}
+        hasDemoData={hasDemoData}
+        enableDemo={enableDemo}
+        canLaunchDemo={canLaunchDemo}
+      />
+
       {/* Page title */}
       <div>
         <h1 className="text-2xl font-bold text-[#fafafa]">Overview</h1>
@@ -177,7 +199,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Row 1: Goals metric card ──────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div id="tour-objective-metric" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link href="/dashboard/goals" className="group block sm:col-span-1">
           <Card hover className="h-full">
             <CardContent className="flex flex-col gap-3 p-5">
@@ -206,7 +228,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Row 2: Quick navigation ───────────────────────────────── */}
-      <div>
+      <div id="tour-objectives-list">
         <h2 className="text-xs font-semibold text-[#71717a] uppercase tracking-wider mb-4">
           Navigate
         </h2>
@@ -232,7 +254,7 @@ export default async function DashboardPage() {
       {/* ── Row 3: Cadence + Milestone timeline ───────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-5 space-y-3">
+          <CardContent id="tour-cadence" className="p-5 space-y-3">
             <h2 className="text-sm font-semibold text-[#a1a1aa]">Next upcoming cadence</h2>
             {upcomingCadence ? (
               <div className="rounded-lg border border-[#27272a] bg-[#18181b] p-3 space-y-2">
@@ -277,7 +299,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardContent className="p-5 space-y-4">
+          <CardContent id="tour-milestones" className="p-5 space-y-4">
             <h2 className="text-sm font-semibold text-[#a1a1aa]">Past week actions</h2>
 
             <div className="space-y-2">

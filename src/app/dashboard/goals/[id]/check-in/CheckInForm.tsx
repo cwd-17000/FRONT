@@ -116,7 +116,7 @@ export default function CheckInForm({
         <h1 className="text-xl font-bold text-[#fafafa]">{goalTitle}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="tour-checkin-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Progress input */}
         <div>
           <Input

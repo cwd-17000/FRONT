@@ -345,7 +345,7 @@ export default async function GoalDetailPage({
             </CardContent>
           </Card>
 
-          <div>
+          <div id="tour-kr-details" className="scroll-mt-24">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-[#a1a1aa]">Key Results ({goal.childGoals.length})</h2>
               <Link href={`/dashboard/goals/${id}/add-key-result`}>
