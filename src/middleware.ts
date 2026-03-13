@@ -8,7 +8,7 @@ export function middleware(req: NextRequest) {
 
   // Redirect unauthenticated users away from protected pages
   if (!isAuth) {
-    if (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding")) {
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding") || pathname.startsWith("/settings")) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
@@ -28,6 +28,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/onboarding/:path*",
+    "/settings/:path*",
     "/login",
     "/register",
   ],
