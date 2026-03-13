@@ -62,7 +62,14 @@ function getPrevOccurrence(recurrence: string, nextOcc: Date): Date | null {
   }
 }
 
-export default async function GoalsPage() {
+export default async function GoalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
+  const activeTab = tab === "archived" ? "archived" : "active";
+
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token");
   if (!token) redirect("/login");
@@ -74,62 +81,76 @@ export default async function GoalsPage() {
   const base = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/goals`;
   const orgBase = `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`;
 
-  const [goalsRes, dashRes, ritualsRes, teamsRes] = await Promise.all([
-    fetch(`${base}?limit=100`, { headers, cache: "no-store" }),
+  const goalsUrl =
+    activeTab === "archived"
+      ? `${base}?status=ARCHIVED&limit=100`
+      : `${base}?limit=100`;
+
+  const fetchList = [
+    fetch(goalsUrl, { headers, cache: "no-store" }),
     fetch(`${base}/dashboard`, { headers, cache: "no-store" }),
-    fetch(`${orgBase}/rituals`, { headers, cache: "no-store" }),
     fetch(`${orgBase}/teams`, { headers, cache: "no-store" }),
-  ]);
+  ];
+
+  // Only fetch rituals/milestones for the active tab
+  if (activeTab === "active") {
+    fetchList.push(fetch(`${orgBase}/rituals`, { headers, cache: "no-store" }));
+  }
+
+  const [goalsRes, dashRes, teamsRes, ritualsRes] = await Promise.all(fetchList);
 
   const goalsData = goalsRes.ok ? await goalsRes.json() : { items: [] };
   const goals = goalsData.items ?? [];
   const dashboard = dashRes.ok ? await dashRes.json() : null;
-  const rituals: RitualItem[] = ritualsRes.ok ? await ritualsRes.json() : [];
   const teams: { id: string; name: string }[] = teamsRes.ok
     ? (await teamsRes.json()).map((t: { id: string; name: string }) => ({ id: t.id, name: t.name }))
     : [];
-
-  // Fetch milestones for active objectives in parallel
-  const activeObjectives: GoalItem[] = (goals as GoalItem[]).filter(
-    (g) => g.type === "OBJECTIVE" && g.status === "ACTIVE"
-  );
-  const milestoneResponses = await Promise.all(
-    activeObjectives.map((g) =>
-      fetch(`${base}/${g.id}/milestones`, { headers, cache: "no-store" })
-    )
-  );
-  const allMilestones: UpcomingMilestone[] = (
-    await Promise.all(
-      milestoneResponses.map(async (res, i) => {
-        if (!res.ok) return [];
-        const data: MilestoneItem[] = await res.json();
-        const goal = activeObjectives[i];
-        return data.map((m) => ({ ...m, goalId: goal.id, goalTitle: goal.title }));
-      })
-    )
-  ).flat();
+  const rituals: RitualItem[] = ritualsRes?.ok ? await ritualsRes.json() : [];
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // Next upcoming milestone (soonest future, not already done)
-  const nextMilestone: UpcomingMilestone | null =
-    allMilestones
-      .filter(
-        (m) =>
-          new Date(m.dueDate) > now &&
-          m.status !== "COMPLETED" &&
-          m.status !== "MISSED"
-      )
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] ?? null;
+  let nextMilestone: UpcomingMilestone | null = null;
+  let pastWeekMilestones: UpcomingMilestone[] = [];
 
-  // Past week milestones (due in last 7 days)
-  const pastWeekMilestones: UpcomingMilestone[] = allMilestones
-    .filter((m) => {
-      const due = new Date(m.dueDate);
-      return due >= sevenDaysAgo && due <= now;
-    })
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  if (activeTab === "active") {
+    // Fetch milestones for active objectives in parallel
+    const activeObjectives: GoalItem[] = (goals as GoalItem[]).filter(
+      (g) => g.type === "OBJECTIVE" && g.status === "ACTIVE"
+    );
+    const milestoneResponses = await Promise.all(
+      activeObjectives.map((g) =>
+        fetch(`${base}/${g.id}/milestones`, { headers, cache: "no-store" })
+      )
+    );
+    const allMilestones: UpcomingMilestone[] = (
+      await Promise.all(
+        milestoneResponses.map(async (res, i) => {
+          if (!res.ok) return [];
+          const data: MilestoneItem[] = await res.json();
+          const goal = activeObjectives[i];
+          return data.map((m) => ({ ...m, goalId: goal.id, goalTitle: goal.title }));
+        })
+      )
+    ).flat();
+
+    nextMilestone =
+      allMilestones
+        .filter(
+          (m) =>
+            new Date(m.dueDate) > now &&
+            m.status !== "COMPLETED" &&
+            m.status !== "MISSED"
+        )
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] ?? null;
+
+    pastWeekMilestones = allMilestones
+      .filter((m) => {
+        const due = new Date(m.dueDate);
+        return due >= sevenDaysAgo && due <= now;
+      })
+      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  }
 
   // Next upcoming cadence (soonest future nextOccurrence)
   const upcomingCadences = rituals
@@ -195,23 +216,57 @@ export default async function GoalsPage() {
             Drive culture and revenue growth across your organization
           </p>
         </div>
-        <Link href="/dashboard/goals/new">
-          <Button className="gap-1.5 shrink-0">
-            <Plus size={15} />
-            New Goal
-          </Button>
+        {activeTab === "active" && (
+          <Link href="/dashboard/goals/new">
+            <Button className="gap-1.5 shrink-0">
+              <Plus size={15} />
+              New Goal
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 border-b border-[#27272a]">
+        <Link
+          href="/dashboard/goals"
+          className={[
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150",
+            activeTab === "active"
+              ? "border-[#6366f1] text-[#fafafa]"
+              : "border-transparent text-[#71717a] hover:text-[#a1a1aa]",
+          ].join(" ")}
+        >
+          Active
+        </Link>
+        <Link
+          href="/dashboard/goals?tab=archived"
+          className={[
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 flex items-center gap-1.5",
+            activeTab === "archived"
+              ? "border-[#f59e0b] text-[#fbbf24]"
+              : "border-transparent text-[#71717a] hover:text-[#a1a1aa]",
+          ].join(" ")}
+        >
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ background: activeTab === "archived" ? "#f59e0b" : "#52525b" }}
+          />
+          Archived
         </Link>
       </div>
 
-      <UpcomingPanel
-        orgId={user.activeOrgId!}
-        nextMilestone={nextMilestone}
-        nextCadence={nextCadence}
-        pastWeekMilestones={pastWeekMilestones}
-        pastWeekCadences={pastWeekCadences}
-      />
+      {activeTab === "active" && (
+        <UpcomingPanel
+          orgId={user.activeOrgId!}
+          nextMilestone={nextMilestone}
+          nextCadence={nextCadence}
+          pastWeekMilestones={pastWeekMilestones}
+          pastWeekCadences={pastWeekCadences}
+        />
+      )}
 
-      <GoalsList goals={goals} dashboard={dashboard} teams={teams} />
+      <GoalsList goals={goals} dashboard={activeTab === "active" ? dashboard : null} teams={teams} archived={activeTab === "archived"} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus } from "lucide-react";
+import { Archive, ChevronRight, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ interface Props {
   goals: Goal[];
   dashboard: OrgDashboard | null;
   teams: Team[];
+  archived?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -189,13 +190,20 @@ function ObjectiveCard({ objective, keyResults }: { objective: Goal; keyResults:
               </span>
             )}
           </div>
-          <Link
-            href={`/dashboard/goals/${objective.id}`}
-            className="text-sm font-semibold text-[#fafafa] hover:text-[#818cf8] transition-colors duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {objective.title}
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/dashboard/goals/${objective.id}`}
+              className="text-sm font-semibold text-[#fafafa] hover:text-[#818cf8] transition-colors duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {objective.title}
+            </Link>
+            {objective.status === "ARCHIVED" && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
+                <Archive size={10} /> Archived
+              </span>
+            )}
+          </div>
           <div className="text-xs text-[#71717a] mt-0.5">
             {objective.owner.firstName} {objective.owner.lastName}
             {keyResults.length > 0 &&
@@ -254,7 +262,7 @@ function ObjectiveCard({ objective, keyResults }: { objective: Goal; keyResults:
   );
 }
 
-export default function GoalsList({ goals, dashboard, teams }: Props) {
+export default function GoalsList({ goals, dashboard, teams, archived = false }: Props) {
   const [selectedTeamId, setSelectedTeamId] = useState<string>("all");
 
   const objectives = goals.filter((g) => g.type === "OBJECTIVE");
@@ -360,17 +368,23 @@ export default function GoalsList({ goals, dashboard, teams }: Props) {
       {/* Objective list */}
       {filteredObjectives.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-[#27272a] rounded-xl text-center">
-          <p className="text-[#71717a] mb-4">
-            {selectedTeamId === "all"
-              ? "No objectives yet. Create your first to drive alignment."
-              : "No objectives assigned to this team yet."}
-          </p>
-          <Link href="/dashboard/goals/new">
-            <Button>
-              <Plus size={15} />
-              {selectedTeamId === "all" ? "Create Your First Objective" : "Create Objective"}
-            </Button>
-          </Link>
+          {archived ? (
+            <p className="text-[#71717a]">No archived goals yet.</p>
+          ) : (
+            <>
+              <p className="text-[#71717a] mb-4">
+                {selectedTeamId === "all"
+                  ? "No objectives yet. Create your first to drive alignment."
+                  : "No objectives assigned to this team yet."}
+              </p>
+              <Link href="/dashboard/goals/new">
+                <Button>
+                  <Plus size={15} />
+                  {selectedTeamId === "all" ? "Create Your First Objective" : "Create Objective"}
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">

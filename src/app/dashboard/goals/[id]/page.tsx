@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -264,7 +264,7 @@ export default async function GoalDetailPage({
             <span className="text-xs text-[#71717a]">{TYPE_LABELS[goal.type] ?? goal.type}</span>
             <span className="text-xs text-[#71717a]">· {goal.timeframe}</span>
             <Badge variant={STATUS_VARIANT[goal.status] ?? "default"}>
-              {goal.status}
+              {STATUS_LABELS[goal.status] ?? goal.status}
             </Badge>
           </div>
           <h1 className="text-2xl font-bold text-[#fafafa]">{goal.title}</h1>
@@ -273,21 +273,29 @@ export default async function GoalDetailPage({
           )}
         </div>
 
-        {isObjective && goal.status === "ACTIVE" && (
-          <Link href={`/dashboard/goals/${id}/add-key-result`}>
-            <Button className="gap-1.5 shrink-0">
-              <Plus size={14} /> Add Key Result
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href={`/dashboard/goals/${id}/edit`}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Pencil size={13} /> Edit
             </Button>
           </Link>
-        )}
 
-        {isKeyResult && goal.status === "ACTIVE" && (
-          <Link href={`/dashboard/goals/${id}/check-in`}>
-            <Button className="gap-1.5 shrink-0">
-              <Plus size={14} /> Check In
-            </Button>
-          </Link>
-        )}
+          {isObjective && goal.status === "ACTIVE" && (
+            <Link href={`/dashboard/goals/${id}/add-key-result`}>
+              <Button className="gap-1.5">
+                <Plus size={14} /> Add Key Result
+              </Button>
+            </Link>
+          )}
+
+          {isKeyResult && goal.status === "ACTIVE" && (
+            <Link href={`/dashboard/goals/${id}/check-in`}>
+              <Button className="gap-1.5">
+                <Plus size={14} /> Check In
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {isObjective ? (
