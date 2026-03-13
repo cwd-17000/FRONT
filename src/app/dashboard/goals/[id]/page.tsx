@@ -405,7 +405,7 @@ export default async function GoalDetailPage({
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div id="tour-kr-details-page" className="grid grid-cols-2 sm:grid-cols-4 gap-3 scroll-mt-24">
             <Card>
               <CardContent className="p-4">
                 <p className="text-xs text-[#71717a] mb-1">Confidence</p>

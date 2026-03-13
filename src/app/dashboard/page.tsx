@@ -12,7 +12,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import OrgSwitcher from "./OrgSwitcher";
 import { MilestoneStatusActions } from "@/components/goals/MilestoneStatusActions";
-import DemoBanner from "@/components/dashboard/DemoBanner";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -48,7 +47,6 @@ const QUICK_LINKS = [
 interface GoalSummary {
   id: string;
   title: string;
-  demoMode?: boolean;
 }
 
 interface Milestone {
@@ -111,18 +109,6 @@ export default async function DashboardPage() {
   const goalsRes = await fetch(`${base}/goals?type=OBJECTIVE`, { headers, cache: "no-store" });
   const goals = goalsRes.ok ? asArray<GoalSummary>(await goalsRes.json()) : [];
   const goalCount = goals.length;
-  const hasDemoData = goals.some((goal) => goal.demoMode === true);
-
-  const [settingsRes, demoStatusRes] = await Promise.all([
-    fetch(`${base}/settings`, { headers, cache: "no-store" }),
-    fetch(`${base}/demo/status`, { headers, cache: "no-store" }),
-  ]);
-
-  const settings = settingsRes.ok ? await settingsRes.json() : null;
-  const demoStatus = demoStatusRes.ok ? await demoStatusRes.json() : null;
-
-  const enableDemo = settings?.enableDemo ?? demoStatus?.enableDemo ?? true;
-  const canLaunchDemo = demoStatus?.canLaunchDemo ?? (enableDemo && goalCount === 0);
 
   const [cadenceRes, milestoneResponses] = await Promise.all([
     fetch(`${base}/rituals`, { headers, cache: "no-store" }),
@@ -179,14 +165,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
-      <DemoBanner
-        orgId={user.activeOrgId!}
-        objectiveCount={goalCount}
-        hasDemoData={hasDemoData}
-        enableDemo={enableDemo}
-        canLaunchDemo={canLaunchDemo}
-      />
-
       {/* Page title */}
       <div>
         <h1 className="text-2xl font-bold text-[#fafafa]">Overview</h1>

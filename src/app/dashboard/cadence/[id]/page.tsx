@@ -102,7 +102,7 @@ export default async function CadenceDetailPage({
         <ArrowLeft size={14} /> Back to Cadence
       </Link>
 
-      <Card>
+      <Card id="tour-cadence-detail" className="scroll-mt-24">
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">

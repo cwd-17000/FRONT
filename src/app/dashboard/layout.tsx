@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import DemoBanner from "@/components/dashboard/DemoBanner";
 
 function decodeJwtPayload(token: string) {
   try {
@@ -24,6 +25,13 @@ export default async function DashboardLayout({
   // Gracefully read user/org info for the header — pages handle auth redirects
   let userEmail = "";
   let orgName = "";
+  let demoBannerData: {
+    orgId: string;
+    objectiveCount: number;
+    hasDemoData: boolean;
+    enableDemo: boolean;
+    canLaunchDemo: boolean;
+  } | null = null;
 
   try {
     const cookieStore = await cookies();
@@ -34,16 +42,32 @@ export default async function DashboardLayout({
       userEmail = user?.email ?? "";
 
       if (user?.activeOrgId) {
-        const res = await fetch(
-          `${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`,
-          {
-            headers: { cookie: `access_token=${token.value}` },
+        const headers = { cookie: `access_token=${token.value}` };
+        const [orgRes, demoStatusRes] = await Promise.all([
+          fetch(`${process.env.API_BASE_URL}/organizations/${user.activeOrgId}`, {
+            headers,
             cache: "no-store",
-          }
-        );
-        if (res.ok) {
-          const org = await res.json();
+          }),
+          fetch(`${process.env.API_BASE_URL}/organizations/${user.activeOrgId}/demo/status`, {
+            headers,
+            cache: "no-store",
+          }),
+        ]);
+
+        if (orgRes.ok) {
+          const org = await orgRes.json();
           orgName = org.name ?? "";
+        }
+
+        if (demoStatusRes.ok) {
+          const status = await demoStatusRes.json();
+          demoBannerData = {
+            orgId: user.activeOrgId,
+            objectiveCount: status.objectiveCount ?? 0,
+            hasDemoData: status.hasDemoData ?? false,
+            enableDemo: status.enableDemo ?? true,
+            canLaunchDemo: status.canLaunchDemo ?? false,
+          };
         }
       }
     }
@@ -57,6 +81,17 @@ export default async function DashboardLayout({
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header userEmail={userEmail} orgName={orgName} />
         <main className="flex-1 overflow-y-auto">
+          {demoBannerData && (
+            <div className="px-6 pt-6 max-w-5xl mx-auto">
+              <DemoBanner
+                orgId={demoBannerData.orgId}
+                objectiveCount={demoBannerData.objectiveCount}
+                hasDemoData={demoBannerData.hasDemoData}
+                enableDemo={demoBannerData.enableDemo}
+                canLaunchDemo={demoBannerData.canLaunchDemo}
+              />
+            </div>
+          )}
           {children}
         </main>
       </div>

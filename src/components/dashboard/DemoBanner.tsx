@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, RotateCcw, Trash2, PlayCircle } from "lucide-react";
+import { Sparkles, Trash2, PlayCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DemoTour } from "./DemoTour";
+
+const TOUR_STORAGE_KEY = "demo-tour-state-v1";
 
 interface DemoBannerProps {
   orgId: string;
@@ -15,7 +17,7 @@ interface DemoBannerProps {
   canLaunchDemo: boolean;
 }
 
-type Action = "launch" | "archive" | "wipe" | null;
+type Action = "launch" | "wipe" | null;
 
 export default function DemoBanner({
   orgId,
@@ -29,6 +31,7 @@ export default function DemoBanner({
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showTour, setShowTour] = useState(false);
+  const [resumeTour, setResumeTour] = useState(false);
   const [confettiTick, setConfettiTick] = useState(0);
 
   const confettiPieces = useMemo(
@@ -42,7 +45,22 @@ export default function DemoBanner({
     [confettiTick],
   );
 
-  if (!enableDemo && !hasDemoData) {
+  useEffect(() => {
+    try {
+      const rawState = window.localStorage.getItem(TOUR_STORAGE_KEY);
+      if (!rawState) return;
+      const parsed = JSON.parse(rawState) as {
+        inProgress?: boolean;
+        completed?: boolean;
+        stepIndex?: number;
+      };
+      setResumeTour(Boolean(parsed.inProgress && !parsed.completed && typeof parsed.stepIndex === "number"));
+    } catch {
+      setResumeTour(false);
+    }
+  }, [showTour]);
+
+  if ((!enableDemo && !hasDemoData) || (!hasDemoData && !canLaunchDemo)) {
     return null;
   }
 
@@ -57,11 +75,6 @@ export default function DemoBanner({
         method: "POST",
         path: `/api/organizations/${orgId}/demo/launch`,
         success: "Demo loaded! Follow the tour.",
-      },
-      archive: {
-        method: "POST",
-        path: `/api/organizations/${orgId}/demo/archive`,
-        success: "Demo data archived.",
       },
       wipe: {
         method: "DELETE",
@@ -114,11 +127,11 @@ export default function DemoBanner({
               <p className="mt-1 text-xs text-[#a1a1aa]">
                 {objectiveCount === 0
                   ? "Your org is empty. Launch a fully-populated demo workspace to explore objectives, key results, check-ins, milestones, and cadence."
-                  : "Use demo controls to walkthrough, archive, or wipe sample objectives scoped to your organization."}
+                  : "Use demo controls to walkthrough or wipe sample objectives scoped to your organization."}
               </p>
             </div>
             <Button size="sm" variant="secondary" onClick={() => setShowTour(true)}>
-              Open Tour
+              {resumeTour ? "Resume Tour" : "Open Tour"}
             </Button>
           </div>
 
@@ -131,17 +144,6 @@ export default function DemoBanner({
             >
               <PlayCircle size={14} />
               {activeAction === "launch" ? "Launching..." : "Launch Interactive Demo"}
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => runAction("archive")}
-              disabled={!hasDemoData || activeAction !== null}
-              className="gap-1.5"
-            >
-              <RotateCcw size={14} />
-              {activeAction === "archive" ? "Archiving..." : "Archive Demo Data"}
             </Button>
 
             <Button
@@ -187,7 +189,13 @@ export default function DemoBanner({
         </div>
       )}
 
-      <DemoTour open={showTour} onClose={() => setShowTour(false)} />
+      <DemoTour
+        open={showTour}
+        onClose={() => setShowTour(false)}
+        onStateChange={(state) => {
+          setResumeTour(state.inProgress && !state.completed);
+        }}
+      />
     </>
   );
 }

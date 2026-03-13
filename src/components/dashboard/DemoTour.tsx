@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+const TOUR_STORAGE_KEY = "demo-tour-state-v1";
+
 type TourStep = {
   title: string;
   description: string;
@@ -24,29 +26,29 @@ const STEPS: TourStep[] = [
   {
     title: "Step 2: Check KR Progress",
     description: "Pick an objective and review key result progress bars, confidence scores, and status colors.",
-    selector: "#tour-kr-details",
-    href: "/dashboard/goals",
+    selector: "#tour-kr-details-page",
+    href: "/dashboard/demo/open/kr-details",
     ctaLabel: "Open KR Details",
   },
   {
     title: "Step 3: Submit a Check-in",
     description: "Use the check-in form to update progress, RAG status (On Track / At Risk / Off Track), and confidence.",
     selector: "#tour-checkin-form",
-    href: "/dashboard/goals",
+    href: "/dashboard/demo/open/check-in",
     ctaLabel: "Open Check-in Form",
   },
   {
     title: "Step 4: Track Milestones",
     description: "Review milestone deadlines and status updates for major objectives.",
-    selector: "#tour-milestones",
-    href: "/dashboard",
+    selector: "#milestones",
+    href: "/dashboard/demo/open/milestones",
     ctaLabel: "Open Milestones",
   },
   {
     title: "Step 5: Run Weekly Cadence",
     description: "Use recurring cadence rituals for weekly and quarterly progress reviews.",
-    selector: "#tour-cadence",
-    href: "/dashboard/cadence",
+    selector: "#tour-cadence-detail",
+    href: "/dashboard/demo/open/cadence",
     ctaLabel: "Open Cadence",
   },
 ];
@@ -54,11 +56,52 @@ const STEPS: TourStep[] = [
 interface DemoTourProps {
   open: boolean;
   onClose: () => void;
+  onStateChange?: (state: { inProgress: boolean; completed: boolean; stepIndex: number }) => void;
 }
 
-export function DemoTour({ open, onClose }: DemoTourProps) {
+export function DemoTour({ open, onClose, onStateChange }: DemoTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const step = useMemo(() => STEPS[stepIndex], [stepIndex]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    try {
+      const rawState = window.localStorage.getItem(TOUR_STORAGE_KEY);
+      if (!rawState) return;
+
+      const parsed = JSON.parse(rawState) as {
+        inProgress?: boolean;
+        completed?: boolean;
+        stepIndex?: number;
+      };
+
+      if (parsed.inProgress && !parsed.completed && typeof parsed.stepIndex === "number") {
+        const clamped = Math.max(0, Math.min(STEPS.length - 1, parsed.stepIndex));
+        setStepIndex(clamped);
+      }
+    } catch {
+      // Ignore malformed local state
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const state = {
+      inProgress: true,
+      completed: false,
+      stepIndex,
+    };
+
+    try {
+      window.localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Ignore localStorage failures
+    }
+
+    onStateChange?.(state);
+  }, [open, stepIndex, onStateChange]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,6 +133,17 @@ export function DemoTour({ open, onClose }: DemoTourProps) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  function handleFinish() {
+    const state = { inProgress: false, completed: true, stepIndex: 0 };
+    try {
+      window.localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Ignore localStorage failures
+    }
+    onStateChange?.(state);
+    onClose();
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -131,7 +185,7 @@ export function DemoTour({ open, onClose }: DemoTourProps) {
                   Next
                 </Button>
               ) : (
-                <Button size="sm" onClick={onClose}>Finish</Button>
+                <Button size="sm" onClick={handleFinish}>Finish</Button>
               )}
             </div>
           </div>
