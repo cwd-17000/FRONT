@@ -9,6 +9,7 @@ import {
   Calendar,
   RefreshCw,
   Building2,
+  Settings,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { label: "Calendar",        href: "/dashboard/calendar",      icon: Calendar },
   { label: "Cadence",         href: "/dashboard/cadence",       icon: RefreshCw },
   { label: "My Organization", href: "/dashboard/my-organization", icon: Building2 },
+  { label: "Settings",        href: "/settings",                icon: Settings },
 ];
 
 export default function Sidebar() {

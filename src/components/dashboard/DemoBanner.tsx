@@ -84,10 +84,17 @@ export default function DemoBanner({
     };
 
     try {
-      const response = await fetch(config[action].path, {
+      let response = await fetch(config[action].path, {
         method: config[action].method,
         credentials: "include",
       });
+
+      if (action === "wipe" && response.status === 404) {
+        response = await fetch(config[action].path, {
+          method: "POST",
+          credentials: "include",
+        });
+      }
 
       if (!response.ok) {
         const text = await response.text();
@@ -137,6 +144,7 @@ export default function DemoBanner({
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
+              type="button"
               size="sm"
               onClick={() => runAction("launch")}
               disabled={launchDisabled}
@@ -147,6 +155,7 @@ export default function DemoBanner({
             </Button>
 
             <Button
+              type="button"
               size="sm"
               variant="danger"
               onClick={() => runAction("wipe")}
