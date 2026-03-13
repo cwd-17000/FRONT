@@ -36,6 +36,13 @@ function formatDate(iso: string) {
   });
 }
 
+interface NextMilestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  targetValue: number | null;
+}
+
 export function CadenceDetailClient({
   orgId,
   cadenceId,
@@ -43,6 +50,8 @@ export function CadenceDetailClient({
   currentUserId,
   participantIds,
   ownerId,
+  nextMilestone,
+  goalUnit,
 }: {
   orgId: string;
   cadenceId: string;
@@ -50,6 +59,8 @@ export function CadenceDetailClient({
   currentUserId: string;
   participantIds: string[];
   ownerId: string;
+  nextMilestone: NextMilestone | null;
+  goalUnit?: string;
 }) {
   const [checkIns, setCheckIns] = useState(initialCheckIns);
   const [form, setForm] = useState({
@@ -101,6 +112,23 @@ export function CadenceDetailClient({
       {canCheckIn && (
         <section className="rounded-xl border border-[#27272a] bg-[#18181b] p-5 space-y-4">
           <h2 className="text-sm font-semibold text-[#a1a1aa]">Log a check-in</h2>
+
+          {nextMilestone && (
+            <div className="rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/10 px-4 py-3">
+              <p className="text-sm text-[#a5b4fc] font-medium">
+                Are you on track to hit{" "}
+                {nextMilestone.targetValue != null
+                  ? <span className="text-[#fafafa] font-bold">{nextMilestone.targetValue.toLocaleString()}{goalUnit ? ` ${goalUnit}` : ""}</span>
+                  : <span className="text-[#fafafa] font-bold">{nextMilestone.title}</span>
+                }{" "}
+                by{" "}
+                <span className="text-[#fafafa] font-bold">
+                  {new Date(nextMilestone.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+                ?
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-start gap-2 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/10 px-3 py-2.5">

@@ -9,6 +9,7 @@ interface Milestone {
   title: string;
   description?: string;
   dueDate: string;
+  targetValue?: number | null;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "MISSED";
 }
 
@@ -34,14 +35,16 @@ export function MilestonesPanel({
   goalId,
   orgId,
   initialData,
+  unit,
 }: {
   goalId: string;
   orgId: string;
   initialData: Milestone[];
+  unit?: string;
 }) {
   const [milestones, setMilestones] = useState(initialData);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: "", dueDate: "", description: "" });
+  const [form, setForm] = useState({ title: "", dueDate: "", description: "", targetValue: "" });
   const [saving, setSaving] = useState(false);
 
   async function handleAdd(e: React.FormEvent) {
@@ -52,13 +55,18 @@ export function MilestonesPanel({
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, dueDate: form.dueDate, description: form.description || undefined }),
+        body: JSON.stringify({
+          title: form.title,
+          dueDate: form.dueDate,
+          description: form.description || undefined,
+          targetValue: form.targetValue !== "" ? Number(form.targetValue) : undefined,
+        }),
       }
     );
     if (res.ok) {
       const created = await res.json();
       setMilestones((m) => [...m, created]);
-      setForm({ title: "", dueDate: "", description: "" });
+      setForm({ title: "", dueDate: "", description: "", targetValue: "" });
       setAdding(false);
     }
     setSaving(false);
@@ -123,6 +131,20 @@ export function MilestonesPanel({
               className={inputClass + " flex-1"}
             />
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-[#71717a] whitespace-nowrap">
+              Target{unit ? ` (${unit})` : ""}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="any"
+              placeholder="Optional"
+              value={form.targetValue}
+              onChange={(e) => setForm((f) => ({ ...f, targetValue: e.target.value }))}
+              className={inputClass + " flex-1"}
+            />
+          </div>
           <Button type="submit" size="sm" disabled={saving}>
             {saving ? "Saving…" : "Save milestone"}
           </Button>
@@ -148,6 +170,11 @@ export function MilestonesPanel({
               >
                 {m.title}
               </div>
+              {m.targetValue != null && (
+                <div className="text-xs text-[#6366f1] mt-0.5 font-medium">
+                  Target: {m.targetValue.toLocaleString()}{unit ? ` ${unit}` : ""}
+                </div>
+              )}
               {m.description && (
                 <div className="text-xs text-[#71717a] mt-0.5 truncate">{m.description}</div>
               )}

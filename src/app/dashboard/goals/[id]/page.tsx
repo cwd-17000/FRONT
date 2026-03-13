@@ -396,7 +396,7 @@ export default async function GoalDetailPage({
           </div>
 
           <div id="milestones" className="scroll-mt-24">
-            <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} />
+            <MilestonesPanel goalId={id} orgId={user.activeOrgId!} initialData={milestones} unit={goal.unit} />
           </div>
 
           <div id="cadence" className="scroll-mt-24">

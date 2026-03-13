@@ -30,6 +30,13 @@ const RECURRENCE_VARIANT: Record<string, "default" | "accent" | "info" | "succes
   QUARTERLY: "default",
 };
 
+interface NextMilestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  targetValue: number | null;
+}
+
 interface Cadence {
   id: string;
   name: string;
@@ -38,7 +45,8 @@ interface Cadence {
   participantIds: string[];
   nextOccurrence?: string;
   owner: { id: string; firstName?: string; lastName?: string };
-  goal?: { id: string; title: string };
+  goal?: { id: string; title: string; unit?: string } | null;
+  nextMilestone?: NextMilestone | null;
 }
 
 interface CheckIn {
@@ -132,6 +140,8 @@ export default async function CadenceDetailPage({
         currentUserId={user.sub}
         participantIds={cadence.participantIds}
         ownerId={cadence.owner.id}
+        nextMilestone={cadence.nextMilestone ?? null}
+        goalUnit={cadence.goal?.unit}
       />
     </div>
   );
